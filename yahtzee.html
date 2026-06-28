@@ -4,15 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boggle</title>
+    <title>Yahtzee Dice</title>
     <style>
         :root {
             --bg: oklch(0.3073 0.0106 253.99);
             --die: oklch(0.3838 0.0143 252.26);
+            --die-kept: oklch(from var(--die) calc(l + 0.06) c h);
             --ink: oklch(0.624 0.0035 247.86);
             --bar: oklch(0.5969 0.0442 248.57);
             --die-border: oklch(from var(--die) calc(l - 0.10) c h);
             --die-shadow: oklch(from var(--bg) calc(l - 0.28) c h / 0.25);
+            --btn: oklch(from var(--die) calc(l - 0.06) c h);
+            --btn-press: oklch(from var(--die) calc(l - 0.14) c h);
         }
 
         *,
@@ -32,150 +35,190 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: clamp(16px, 3vmin, 40px);
             padding: 16px;
             overflow: hidden;
             font-family: 'Lato', 'Open Sans', sans-serif, serif;
         }
 
-        .grid {
+        .status {
+            color: var(--bar);
+            font-size: clamp(16px, 2.6vmin, 30px);
+            font-weight: bold;
+            letter-spacing: 0.08em;
+            user-select: none;
+            text-align: center;
+        }
+
+        .row {
             display: grid;
-            /* columns set by JS */
-            gap: clamp(6px, 1.1vmin, 14px);
-            width: min(80vw, 64vh);
+            grid-template-columns: repeat(5, 1fr);
+            gap: clamp(8px, 1.6vmin, 20px);
+            width: min(94vw, 1100px);
         }
 
         .die {
             aspect-ratio: 1 / 1;
             background: var(--die);
             border: 2px solid var(--die-border);
-            border-radius: clamp(5px, 0.9vmin, 12px);
+            border-radius: clamp(6px, 1vmin, 14px);
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 2px 4px 10px var(--die-shadow);
             position: relative;
+            cursor: pointer;
         }
 
-        .letter {
-            font-size: clamp(24px, 7vmin, 84px);
+        .die.kept {
+            background: var(--die-kept);
+            border: 4px solid var(--bar);
+        }
+
+        .number {
+            font-size: clamp(30px, 10vmin, 120px);
             font-weight: bold;
             color: var(--ink);
             line-height: 1;
             user-select: none;
         }
 
-        .letter.wide {
-            font-size: clamp(18px, 5.2vmin, 62px);
-        }
-
-        .underline-mark {
+        .keep-label {
+            display: none;
             position: absolute;
-            bottom: clamp(7px, 2vmin, 22px);
+            bottom: clamp(6px, 1.4vmin, 16px);
             left: 50%;
             transform: translateX(-50%);
-            width: clamp(12px, 5vmin, 26px);
-            height: 2px;
-            background: var(--ink);
-            border-radius: 1px;
+            font-size: clamp(10px, 1.6vmin, 18px);
+            font-weight: bold;
+            letter-spacing: 0.14em;
+            color: var(--bar);
+            user-select: none;
+        }
+
+        .die.kept .keep-label {
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            gap: clamp(12px, 2.4vmin, 28px);
+        }
+
+        button {
+            padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
+            font-size: clamp(13px, 1.9vmin, 20px);
+            font-weight: bold;
+            background: var(--btn);
+            color: var(--ink);
+            border: 2px solid var(--die-border);
+            border-radius: clamp(4px, 0.7vmin, 9px);
+            cursor: pointer;
+            letter-spacing: 0.06em;
+        }
+
+        button:active {
+            background: var(--btn-press);
         }
     </style>
 </head>
 
 <body>
 
-    <div class="grid" id="grid"></div>
+    <div class="status" id="status">Press Roll to Start</div>
+
+    <div class="row" id="row"></div>
+
+    <div class="controls">
+        <button id="rollBtn">Roll</button>
+        <button id="resetBtn">Reset</button>
+    </div>
 
     <script>
-        // Standard 4x4 Boggle -- 16 dice (New Boggle set, post-1990)
-        const DICE_4 = [
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['E', 'L', 'R', 'T', 'T', 'Y'],
-            ['A', 'O', 'O', 'T', 'T', 'W'],
-            ['A', 'B', 'B', 'J', 'O', 'O'],
-            ['E', 'H', 'R', 'T', 'V', 'W'],
-            ['C', 'I', 'M', 'O', 'T', 'U'],
-            ['D', 'I', 'S', 'T', 'T', 'Y'],
-            ['E', 'I', 'O', 'S', 'S', 'T'],
-            ['D', 'E', 'L', 'R', 'V', 'Y'],
-            ['A', 'C', 'H', 'O', 'P', 'S'],
-            ['H', 'I', 'M', 'N', 'Qu', 'U'],
-            ['E', 'E', 'F', 'H', 'I', 'Y'],
-            ['E', 'E', 'G', 'H', 'N', 'W'],
-            ['A', 'F', 'F', 'K', 'P', 'S'],
-            ['H', 'L', 'N', 'N', 'R', 'Z'],
-            ['D', 'E', 'I', 'L', 'R', 'X'],
-        ];
+        const COUNT = 5;
+        const row = document.getElementById('row');
+        const status = document.getElementById('status');
+        const rollBtn = document.getElementById('rollBtn');
+        const resetBtn = document.getElementById('resetBtn');
 
-        // Big Boggle 5x5 -- 25 dice
-        const DICE_5 = [
-            ['A', 'A', 'A', 'F', 'R', 'S'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'F', 'I', 'R', 'S'],
-            ['A', 'D', 'E', 'N', 'N', 'N'],
-            ['A', 'E', 'E', 'E', 'E', 'M'],
-            ['A', 'E', 'G', 'M', 'U', 'U'],
-            ['A', 'E', 'G', 'M', 'N', 'N'],
-            ['A', 'F', 'I', 'R', 'S', 'Y'],
-            ['B', 'J', 'K', 'Qu', 'X', 'Z'],
-            ['C', 'C', 'N', 'S', 'T', 'W'],
-            ['C', 'E', 'I', 'I', 'L', 'T'],
-            ['C', 'E', 'I', 'L', 'P', 'T'],
-            ['D', 'D', 'H', 'N', 'O', 'T'],
-            ['D', 'H', 'H', 'L', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['E', 'E', 'I', 'I', 'I', 'T'],
-            ['E', 'N', 'S', 'S', 'S', 'U'],
-            ['E', 'E', 'T', 'T', 'I', 'I'],
-            ['F', 'I', 'P', 'R', 'S', 'Y'],
-            ['G', 'O', 'R', 'R', 'V', 'W'],
-            ['H', 'I', 'P', 'R', 'R', 'Y'],
-            ['N', 'O', 'O', 'T', 'U', 'W'],
-            ['O', 'O', 'O', 'T', 'T', 'U'],
-        ];
+        // Each die: { value: null | 1-6, kept: boolean }
+        let dice = [];
+        let dieEls = [];
+        let rollNum = 0;
 
-        const UNDERLINED = new Set(['N', 'Z']);
-        const WIDE = new Set(['W', 'M', 'Qu']);
+        function buildDice() {
+            row.innerHTML = '';
+            dieEls = [];
+            for (let i = 0; i < COUNT; i++) {
+                const die = document.createElement('div');
+                die.className = 'die';
 
-        const params = new URLSearchParams(window.location.search);
-        const isBig = params.get('size') === '5';
-        const DICE = isBig ? DICE_5 : DICE_4;
-        const COLS = isBig ? 5 : 4;
-        document.getElementById('grid').style.gridTemplateColumns =
-            `repeat(${COLS}, 1fr)`;
+                const number = document.createElement('span');
+                number.className = 'number';
 
-        function shuffle(arr) {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
+                const label = document.createElement('div');
+                label.className = 'keep-label';
+                label.textContent = 'KEEP';
+
+                die.appendChild(number);
+                die.appendChild(label);
+                die.addEventListener('click', () => toggleKeep(i));
+
+                row.appendChild(die);
+                dieEls.push({ die, number });
             }
-            return a;
         }
 
-        function buildGrid() {
-            const shuffledDice = shuffle(DICE);
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            shuffledDice.forEach(faces => {
-                const face = faces[Math.floor(Math.random() * faces.length)];
-                const dieEl = document.createElement('div');
-                dieEl.className = 'die';
-                const span = document.createElement('span');
-                span.className = 'letter' + (WIDE.has(face) ? ' wide' : '');
-                span.textContent = face;
-                dieEl.appendChild(span);
-                if (UNDERLINED.has(face)) {
-                    const ul = document.createElement('div');
-                    ul.className = 'underline-mark';
-                    dieEl.appendChild(ul);
+        function updateDie(i) {
+            const d = dice[i];
+            const { die, number } = dieEls[i];
+            number.textContent = d.value === null ? '' : d.value;
+            die.classList.toggle('kept', d.kept);
+        }
+
+        function updateAll() {
+            for (let i = 0; i < COUNT; i++) updateDie(i);
+        }
+
+        function toggleKeep(i) {
+            // Can only keep a die that has been rolled.
+            if (dice[i].value === null) return;
+            dice[i].kept = !dice[i].kept;
+            updateDie(i);
+        }
+
+        function roll() {
+            // Nothing to roll if every die is being kept.
+            const hasRollable = dice.some(d => !d.kept);
+            if (!hasRollable) return;
+
+            dice.forEach(d => {
+                if (!d.kept) {
+                    d.value = 1 + Math.floor(Math.random() * 6);
                 }
-                grid.appendChild(dieEl);
             });
+            rollNum++;
+            updateAll();
+            status.textContent = 'Roll ' + rollNum;
         }
 
-        buildGrid();
+        function reset() {
+            dice.forEach(d => { d.value = null; d.kept = false; });
+            rollNum = 0;
+            updateAll();
+            status.textContent = 'Press Roll to Start';
+        }
+
+        function init() {
+            dice = Array.from({ length: COUNT }, () => ({ value: null, kept: false }));
+            buildDice();
+            reset();
+        }
+
+        rollBtn.addEventListener('click', roll);
+        resetBtn.addEventListener('click', reset);
+
+        init();
     </script>
 </body>
 
