@@ -72,7 +72,7 @@
 
         .die.kept {
             background: var(--die-kept);
-            border: 4px solid var(--bar);
+            /* border: 4px solid var(--bar); */
         }
 
         .number {
@@ -81,23 +81,6 @@
             color: var(--ink);
             line-height: 1;
             user-select: none;
-        }
-
-        .keep-label {
-            display: none;
-            position: absolute;
-            bottom: clamp(6px, 1.4vmin, 16px);
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: clamp(10px, 1.6vmin, 18px);
-            font-weight: bold;
-            letter-spacing: 0.14em;
-            color: var(--bar);
-            user-select: none;
-        }
-
-        .die.kept .keep-label {
-            display: block;
         }
 
         .controls {
@@ -156,12 +139,7 @@
                 const number = document.createElement('span');
                 number.className = 'number';
 
-                const label = document.createElement('div');
-                label.className = 'keep-label';
-                label.textContent = 'KEEP';
-
                 die.appendChild(number);
-                die.appendChild(label);
                 die.addEventListener('click', () => toggleKeep(i));
 
                 row.appendChild(die);
