@@ -83,6 +83,9 @@
 
         .button-bar {
             position: fixed;
+            display: flex;
+            justify-content: space-between;
+            right: 0;
             top: 0;
             left: 0;
             padding: 1rem;
@@ -108,7 +111,10 @@
 
 <body>
 
-    <div class="button-bar"><a href="index.html"><button>Home</button></a></div>
+    <div class="button-bar">
+        <a href="index.html"><button>Home</button></a>
+        <button id="new-game">New Game</button>
+    </div>
 
     <div class="grid" id="grid"></div>
 
@@ -203,6 +209,11 @@
         }
 
         buildGrid();
+
+        const newGameButton = document.getElementById('new-game');
+        newGameButton.addEventListener('click', () => {
+            buildGrid();
+        });
     </script>
     <script>
         if ("serviceWorker" in navigator) {
