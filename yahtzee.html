@@ -89,6 +89,13 @@
             gap: clamp(12px, 2.4vmin, 28px);
         }
 
+        .button-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 1rem;
+        }
+
         button {
             padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
             font-size: clamp(13px, 1.9vmin, 20px);
@@ -108,6 +115,8 @@
 </head>
 
 <body>
+
+    <div class="button-bar"><a href="index.html"><button>Home</button></a></div>
 
     <div class="status" id="status">Press Roll to Start</div>
 

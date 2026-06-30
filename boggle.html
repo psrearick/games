@@ -80,10 +80,35 @@
             background: var(--ink);
             border-radius: 1px;
         }
+
+        .button-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 1rem;
+        }
+
+        button {
+            padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
+            font-size: clamp(13px, 1.9vmin, 20px);
+            font-weight: bold;
+            background: var(--btn);
+            color: var(--ink);
+            border: 2px solid var(--die-border);
+            border-radius: clamp(4px, 0.7vmin, 9px);
+            cursor: pointer;
+            letter-spacing: 0.06em;
+        }
+
+        button:active {
+            background: var(--btn-press);
+        }
     </style>
 </head>
 
 <body>
+
+    <div class="button-bar"><a href="index.html"><button>Home</button></a></div>
 
     <div class="grid" id="grid"></div>
 
