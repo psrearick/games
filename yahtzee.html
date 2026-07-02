@@ -18,6 +18,8 @@
             --die-shadow: oklch(from var(--bg) calc(l - 0.28) c h / 0.25);
             --btn: oklch(from var(--die) calc(l - 0.06) c h);
             --btn-press: oklch(from var(--die) calc(l - 0.14) c h);
+            --accent: oklch(0.6969 0.1442 248.57);
+            /* --accent: #000000; */
         }
 
         *,
@@ -36,10 +38,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: clamp(16px, 3vmin, 40px);
+            justify-content: flex-start;
+            gap: clamp(12px, 2.4vmin, 28px);
             padding: 16px;
-            overflow: hidden;
+            padding-top: clamp(64px, 10vmin, 96px);
             font-family: 'Lato', 'Open Sans', sans-serif, serif;
         }
 
@@ -56,7 +58,7 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: clamp(8px, 1.6vmin, 20px);
-            width: min(94vw, 1100px);
+            width: min(94vw, 700px);
         }
 
         .die {
@@ -77,7 +79,7 @@
         }
 
         .number {
-            font-size: clamp(30px, 10vmin, 120px);
+            font-size: clamp(30px, 8vmin, 90px);
             font-weight: bold;
             color: var(--ink);
             line-height: 1;
@@ -94,6 +96,8 @@
             top: 0;
             left: 0;
             padding: 1rem;
+            display: flex;
+            gap: 10px;
         }
 
         button {
@@ -111,33 +115,262 @@
         button:active {
             background: var(--btn-press);
         }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            padding: clamp(6px, 1vmin, 11px) clamp(10px, 1.6vmin, 16px);
+            font-size: clamp(13px, 1.9vmin, 18px);
+            background: var(--die);
+            color: var(--ink);
+            border: 2px solid var(--die-border);
+            border-radius: clamp(4px, 0.7vmin, 9px);
+        }
+
+        /* ---- Setup panel ---- */
+        .setup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: 10px;
+            padding: clamp(20px, 3vmin, 36px);
+            width: min(94vw, 460px);
+        }
+
+        .setup-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .setup-row label {
+            color: var(--ink);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+        }
+
+        .player-names {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .player-names input {
+            width: 100%;
+        }
+
+        /* ---- Score card ---- */
+        .card-wrap {
+            width: min(96vw, 900px);
+            overflow-x: auto;
+        }
+
+        table.scorecard {
+            border-collapse: collapse;
+            width: 100%;
+            color: var(--ink);
+        }
+
+        table.scorecard th,
+        table.scorecard td {
+            border: 1px solid var(--die-border);
+            padding: clamp(4px, 1vmin, 10px);
+            text-align: center;
+            font-size: clamp(11px, 1.6vmin, 16px);
+            white-space: nowrap;
+        }
+
+        table.scorecard th.category,
+        table.scorecard td.category {
+            text-align: left;
+            font-weight: bold;
+            background: var(--die);
+        }
+
+        table.scorecard th {
+            background: var(--die);
+            letter-spacing: 0.04em;
+        }
+
+        table.scorecard th.active-player {
+            color: var(--accent);
+        }
+
+        table.scorecard td.score-cell {
+            cursor: default;
+            background: var(--bg);
+        }
+
+        table.scorecard td.score-cell.filled {
+            font-weight: bold;
+        }
+
+        table.scorecard td.score-cell.pickable {
+            cursor: pointer;
+            color: var(--accent);
+            opacity: 0.75;
+            background: var(--die-kept);
+        }
+
+        table.scorecard td.score-cell.pickable:hover {
+            opacity: 1;
+        }
+
+        table.scorecard tr.subtotal td,
+        table.scorecard tr.total td {
+            background: var(--die-kept);
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="button-bar"><a href="index.html"><button>Home</button></a></div>
+    <div class="button-bar">
+        <a href="index.html"><button>Home</button></a>
+        <button id="newGameBtn" class="hidden">New Game</button>
+    </div>
 
-    <div class="status" id="status">Press Roll to Start</div>
+    <!-- Player setup -->
+    <div class="setup" id="setup">
+        <div class="status">Set Up Players</div>
+        <div class="setup-row">
+            <label for="playerCount">Number of Players</label>
+            <input type="number" id="playerCount" min="1" max="8" value="2">
+        </div>
+        <div class="player-names" id="playerNames"></div>
+        <button id="startBtn">Start Game</button>
+    </div>
 
-    <div class="row" id="row"></div>
+    <!-- Game area -->
+    <div id="game" class="hidden">
+        <div class="status" id="status">Press Roll to Start</div>
 
-    <div class="controls">
-        <button id="rollBtn">Roll</button>
-        <button id="resetBtn">Reset</button>
+        <div class="row" id="row"></div>
+
+        <div class="controls">
+            <button id="rollBtn">Roll</button>
+        </div>
+
+        <div class="card-wrap">
+            <table class="scorecard" id="scorecard"></table>
+        </div>
     </div>
 
     <script>
         const COUNT = 5;
+        const MAX_ROLLS = 3;
+
+        const UPPER_CATEGORIES = [
+            { key: 'ones', label: 'Ones', face: 1 },
+            { key: 'twos', label: 'Twos', face: 2 },
+            { key: 'threes', label: 'Threes', face: 3 },
+            { key: 'fours', label: 'Fours', face: 4 },
+            { key: 'fives', label: 'Fives', face: 5 },
+            { key: 'sixes', label: 'Sixes', face: 6 },
+        ];
+
+        const LOWER_CATEGORIES = [
+            { key: 'threeKind', label: '3 of a Kind' },
+            { key: 'fourKind', label: '4 of a Kind' },
+            { key: 'fullHouse', label: 'Full House' },
+            { key: 'smallStraight', label: 'Sm. Straight' },
+            { key: 'largeStraight', label: 'Lg. Straight' },
+            { key: 'yahtzee', label: 'Yahtzee' },
+            { key: 'chance', label: 'Chance' },
+        ];
+
+        const ALL_CATEGORIES = [...UPPER_CATEGORIES, ...LOWER_CATEGORIES];
+        const UPPER_BONUS_THRESHOLD = 63;
+        const UPPER_BONUS = 35;
+
+        // ---- DOM refs ----
+        const setupEl = document.getElementById('setup');
+        const gameEl = document.getElementById('game');
+        const playerCountInput = document.getElementById('playerCount');
+        const playerNamesEl = document.getElementById('playerNames');
+        const startBtn = document.getElementById('startBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+
         const row = document.getElementById('row');
         const status = document.getElementById('status');
         const rollBtn = document.getElementById('rollBtn');
-        const resetBtn = document.getElementById('resetBtn');
+        const scorecardEl = document.getElementById('scorecard');
 
-        // Each die: { value: null | 1-6, kept: boolean }
+        // ---- Game state ----
         let dice = [];
         let dieEls = [];
-        let rollNum = 0;
+        let rollsLeft = MAX_ROLLS;
+        let players = [];
+        let currentPlayer = 0;
+        let gameOver = false;
+
+        // ================= Setup screen =================
+
+        function renderPlayerNameInputs() {
+            const count = clampPlayerCount();
+            playerNamesEl.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Player ' + (i + 1) + ' name';
+                input.maxLength = 16;
+                input.dataset.index = i;
+                playerNamesEl.appendChild(input);
+            }
+        }
+
+        function clampPlayerCount() {
+            let n = parseInt(playerCountInput.value, 10);
+            if (isNaN(n)) n = 2;
+            n = Math.max(1, Math.min(8, n));
+            playerCountInput.value = n;
+            return n;
+        }
+
+        playerCountInput.addEventListener('input', renderPlayerNameInputs);
+
+        startBtn.addEventListener('click', () => {
+            const count = clampPlayerCount();
+            const nameInputs = playerNamesEl.querySelectorAll('input');
+            players = Array.from({ length: count }, (_, i) => {
+                const typed = nameInputs[i] && nameInputs[i].value.trim();
+                return {
+                    name: typed || ('Player ' + (i + 1)),
+                    scores: Object.fromEntries(ALL_CATEGORIES.map(c => [c.key, null])),
+                };
+            });
+            currentPlayer = 0;
+            gameOver = false;
+            setupEl.classList.add('hidden');
+            gameEl.classList.remove('hidden');
+            newGameBtn.classList.remove('hidden');
+            buildDice();
+            startTurn();
+            buildScorecard();
+        });
+
+        newGameBtn.addEventListener('click', () => {
+            gameEl.classList.add('hidden');
+            newGameBtn.classList.add('hidden');
+            setupEl.classList.remove('hidden');
+        });
+
+        // ================= Dice =================
 
         function buildDice() {
             row.innerHTML = '';
@@ -164,11 +397,12 @@
             die.classList.toggle('kept', d.kept);
         }
 
-        function updateAll() {
+        function updateAllDice() {
             for (let i = 0; i < COUNT; i++) updateDie(i);
         }
 
         function toggleKeep(i) {
+            if (gameOver) return;
             // Can only keep a die that has been rolled.
             if (dice[i].value === null) return;
             dice[i].kept = !dice[i].kept;
@@ -176,7 +410,7 @@
         }
 
         function roll() {
-            // Nothing to roll if every die is being kept.
+            if (gameOver || rollsLeft <= 0) return;
             const hasRollable = dice.some(d => !d.kept);
             if (!hasRollable) return;
 
@@ -185,28 +419,258 @@
                     d.value = 1 + Math.floor(Math.random() * 6);
                 }
             });
-            rollNum++;
-            updateAll();
-            status.textContent = 'Roll ' + rollNum;
+            rollsLeft--;
+            updateAllDice();
+            updateStatus();
+            rollBtn.disabled = rollsLeft <= 0;
+            renderScorecard();
         }
 
-        function reset() {
-            dice.forEach(d => { d.value = null; d.kept = false; });
-            rollNum = 0;
-            updateAll();
-            status.textContent = 'Press Roll to Start';
-        }
-
-        function init() {
+        function startTurn() {
             dice = Array.from({ length: COUNT }, () => ({ value: null, kept: false }));
-            buildDice();
-            reset();
+            rollsLeft = MAX_ROLLS;
+            updateAllDice();
+            rollBtn.disabled = false;
+            updateStatus();
+        }
+
+        function updateStatus() {
+            const p = players[currentPlayer];
+            const rolled = dice.some(d => d.value !== null);
+            const rollText = rolled
+                ? 'Roll ' + (MAX_ROLLS - rollsLeft) + ' of ' + MAX_ROLLS
+                : 'Press Roll to Start';
+            status.textContent = p.name + "'s turn — " + rollText;
+        }
+
+        // ================= Scoring =================
+
+        function diceValues() {
+            return dice.map(d => d.value).filter(v => v !== null);
+        }
+
+        function countsOf(values) {
+            const counts = [0, 0, 0, 0, 0, 0, 0];
+            values.forEach(v => counts[v]++);
+            return counts;
+        }
+
+        function calcScore(key, values) {
+            if (values.length < COUNT) return 0;
+            const counts = countsOf(values);
+            const sum = values.reduce((a, b) => a + b, 0);
+
+            const upper = UPPER_CATEGORIES.find(c => c.key === key);
+            if (upper) return counts[upper.face] * upper.face;
+
+            switch (key) {
+                case 'threeKind':
+                    return counts.some(c => c >= 3) ? sum : 0;
+                case 'fourKind':
+                    return counts.some(c => c >= 4) ? sum : 0;
+                case 'fullHouse':
+                    return counts.includes(3) && counts.includes(2) ? 25 : 0;
+                case 'smallStraight': {
+                    const set = new Set(values);
+                    const runs = [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]];
+                    return runs.some(run => run.every(v => set.has(v))) ? 30 : 0;
+                }
+                case 'largeStraight': {
+                    const set = new Set(values);
+                    const runs = [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]];
+                    return runs.some(run => run.every(v => set.has(v)) && set.size === 5) ? 40 : 0;
+                }
+                case 'yahtzee':
+                    return counts.some(c => c === 5) ? 50 : 0;
+                case 'chance':
+                    return sum;
+                default:
+                    return 0;
+            }
+        }
+
+        function upperSubtotal(p) {
+            return UPPER_CATEGORIES.reduce((sum, c) => sum + (p.scores[c.key] || 0), 0);
+        }
+
+        function upperBonus(p) {
+            return upperSubtotal(p) >= UPPER_BONUS_THRESHOLD ? UPPER_BONUS : 0;
+        }
+
+        function totalScore(p) {
+            const lower = LOWER_CATEGORIES.reduce((sum, c) => sum + (p.scores[c.key] || 0), 0);
+            return upperSubtotal(p) + upperBonus(p) + lower;
+        }
+
+        function allFilled(p) {
+            return ALL_CATEGORIES.every(c => p.scores[c.key] !== null);
+        }
+
+        // ================= Score card UI =================
+
+        function buildScorecard() {
+            scorecardEl.innerHTML = '';
+
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            headRow.appendChild(document.createElement('th')).classList.add('category');
+            players.forEach((p, i) => {
+                const th = document.createElement('th');
+                th.textContent = p.name;
+                th.dataset.playerIndex = i;
+                headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+            scorecardEl.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+
+            function addCategoryRows(cats) {
+                cats.forEach(cat => {
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('td');
+                    th.className = 'category';
+                    th.textContent = cat.label;
+                    tr.appendChild(th);
+                    players.forEach((p, i) => {
+                        const td = document.createElement('td');
+                        td.className = 'score-cell';
+                        td.dataset.playerIndex = i;
+                        td.dataset.category = cat.key;
+                        td.addEventListener('click', () => attemptScore(i, cat.key));
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+            }
+
+            addCategoryRows(UPPER_CATEGORIES);
+
+            const subtotalRow = document.createElement('tr');
+            subtotalRow.className = 'subtotal';
+            const subtotalLabel = document.createElement('td');
+            subtotalLabel.className = 'category';
+            subtotalLabel.textContent = 'Upper Subtotal';
+            subtotalRow.appendChild(subtotalLabel);
+            players.forEach((p, i) => {
+                const td = document.createElement('td');
+                td.dataset.role = 'upperSubtotal';
+                td.dataset.playerIndex = i;
+                subtotalRow.appendChild(td);
+            });
+            tbody.appendChild(subtotalRow);
+
+            const bonusRow = document.createElement('tr');
+            const bonusLabel = document.createElement('td');
+            bonusLabel.className = 'category';
+            bonusLabel.textContent = 'Bonus (63+ = 35)';
+            bonusRow.appendChild(bonusLabel);
+            players.forEach((p, i) => {
+                const td = document.createElement('td');
+                td.dataset.role = 'upperBonus';
+                td.dataset.playerIndex = i;
+                bonusRow.appendChild(td);
+            });
+            tbody.appendChild(bonusRow);
+
+            addCategoryRows(LOWER_CATEGORIES);
+
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total';
+            const totalLabel = document.createElement('td');
+            totalLabel.className = 'category';
+            totalLabel.textContent = 'Total';
+            totalRow.appendChild(totalLabel);
+            players.forEach((p, i) => {
+                const td = document.createElement('td');
+                td.dataset.role = 'total';
+                td.dataset.playerIndex = i;
+                totalRow.appendChild(td);
+            });
+            tbody.appendChild(totalRow);
+
+            scorecardEl.appendChild(tbody);
+            renderScorecard();
+        }
+
+        function renderScorecard() {
+            const values = diceValues();
+            const canPick = !gameOver && values.length === COUNT;
+
+            // Header highlight
+            scorecardEl.querySelectorAll('thead th[data-player-index]').forEach(th => {
+                const i = Number(th.dataset.playerIndex);
+                th.classList.toggle('active-player', i === currentPlayer && !gameOver);
+            });
+
+            ALL_CATEGORIES.forEach(cat => {
+                players.forEach((p, i) => {
+                    const td = scorecardEl.querySelector(
+                        'td.score-cell[data-player-index="' + i + '"][data-category="' + cat.key + '"]'
+                    );
+                    if (!td) return;
+                    const scored = p.scores[cat.key];
+                    if (scored !== null) {
+                        td.textContent = scored;
+                        td.classList.add('filled');
+                        td.classList.remove('pickable');
+                    } else if (canPick && i === currentPlayer) {
+                        td.textContent = calcScore(cat.key, values);
+                        td.classList.add('pickable');
+                        td.classList.remove('filled');
+                    } else {
+                        td.textContent = '';
+                        td.classList.remove('pickable', 'filled');
+                    }
+                });
+            });
+
+            players.forEach((p, i) => {
+                const subEl = scorecardEl.querySelector('[data-role="upperSubtotal"][data-player-index="' + i + '"]');
+                const bonusEl = scorecardEl.querySelector('[data-role="upperBonus"][data-player-index="' + i + '"]');
+                const totalEl = scorecardEl.querySelector('[data-role="total"][data-player-index="' + i + '"]');
+                if (subEl) subEl.textContent = upperSubtotal(p);
+                if (bonusEl) bonusEl.textContent = upperBonus(p);
+                if (totalEl) totalEl.textContent = totalScore(p);
+            });
+        }
+
+        function attemptScore(playerIndex, categoryKey) {
+            if (gameOver) return;
+            if (playerIndex !== currentPlayer) return;
+            const p = players[playerIndex];
+            if (p.scores[categoryKey] !== null) return;
+            const values = diceValues();
+            if (values.length !== COUNT) return; // must roll at least once
+
+            p.scores[categoryKey] = calcScore(categoryKey, values);
+            advanceTurn();
+        }
+
+        function advanceTurn() {
+            if (players.every(allFilled)) {
+                endGame();
+                return;
+            }
+            currentPlayer = (currentPlayer + 1) % players.length;
+            startTurn();
+            renderScorecard();
+        }
+
+        function endGame() {
+            gameOver = true;
+            rollBtn.disabled = true;
+            const best = players.reduce((a, b) => (totalScore(b) > totalScore(a) ? b : a));
+            const tie = players.filter(p => totalScore(p) === totalScore(best)).length > 1;
+            status.textContent = tie
+                ? "Game Over — It's a tie at " + totalScore(best) + '!'
+                : 'Game Over — ' + best.name + ' wins with ' + totalScore(best) + '!';
+            renderScorecard();
         }
 
         rollBtn.addEventListener('click', roll);
-        resetBtn.addEventListener('click', reset);
 
-        init();
+        renderPlayerNameInputs();
     </script>
     <script>
         if ("serviceWorker" in navigator) {
