@@ -1,7 +1,7 @@
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open("static").then((cache) => {
-      return cache.addAll(["/", "/index.html", "/boggle.html", "/yahtzee.html"]);
+      return cache.addAll(["/", "/index.html", "/boggle.html", "/yahtzee.html", "/words.js"]);
     })
   );
 });
