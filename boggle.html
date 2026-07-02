@@ -176,6 +176,7 @@
             display: grid;
             gap: clamp(6px, 1.1vmin, 14px);
             width: min(80vw, 60vh);
+            touch-action: none;
         }
 
         .die {
@@ -195,6 +196,10 @@
         .die.selected {
             background: var(--die-kept);
             border-color: var(--accent);
+        }
+
+        .grid.has-valid-word .die.selected {
+            border-width: 4px;
         }
 
         .letter {
@@ -322,18 +327,35 @@
             font-weight: bold;
         }
 
-        /* ---- End screen ---- */
-        .end-summary {
-            color: var(--ink);
-            text-align: center;
-            font-size: clamp(14px, 2vmin, 20px);
+        .word-list-panel.wide {
+            width: min(94vw, 720px);
         }
 
-        .end-summary .score {
+        .word-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(10px, 1.8vmin, 22px);
+            justify-content: center;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .word-column {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 90px;
+        }
+
+        .word-column-header {
             color: var(--bar);
             font-weight: bold;
-            font-size: clamp(22px, 3.4vmin, 36px);
-            display: block;
+            text-align: center;
+            letter-spacing: 0.04em;
+            font-size: clamp(11px, 1.5vmin, 14px);
+            border-bottom: 1px solid var(--die-border);
+            padding-bottom: 4px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -393,32 +415,18 @@
 
         <div class="word-panel">
             <div class="current-word" id="current-word">&nbsp;</div>
-            <div class="status-line" id="status-line">Tap adjacent letters to build a word.</div>
-            <div class="controls">
+            <div class="status-line" id="status-line">Drag or tap adjacent letters to build a word.</div>
+            <div class="controls" id="word-controls">
                 <button id="submit-btn">Submit</button>
                 <button id="clear-btn">Clear</button>
             </div>
         </div>
 
         <div class="lists-wrap">
-            <div class="word-list-panel">
-                <div class="title">Words Found</div>
+            <div class="word-list-panel" id="word-list-panel">
+                <div class="title" id="word-list-title">Words Found</div>
                 <ul class="word-list" id="found-list"></ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- End screen -->
-    <div id="end" class="hidden">
-        <div class="end-summary">
-            <span class="score" id="final-score">0</span>
-            You found <span id="found-of-possible">0 of 0</span> possible words
-        </div>
-
-        <div class="lists-wrap">
-            <div class="word-list-panel">
-                <div class="title">All Possible Words</div>
-                <ul class="word-list" id="all-words-list"></ul>
+                <div class="word-columns hidden" id="word-columns"></div>
             </div>
         </div>
     </div>
@@ -520,7 +528,6 @@
 
         const setupEl = document.getElementById('setup');
         const gameEl = document.getElementById('game');
-        const endEl = document.getElementById('end');
 
         const sizeOptionsEl = document.getElementById('size-options');
         const timeOptionsEl = document.getElementById('time-options');
@@ -536,13 +543,13 @@
         const foundCountValueEl = document.getElementById('found-count-value');
         const currentWordEl = document.getElementById('current-word');
         const statusLineEl = document.getElementById('status-line');
+        const wordControlsEl = document.getElementById('word-controls');
         const submitBtn = document.getElementById('submit-btn');
         const clearBtn = document.getElementById('clear-btn');
+        const wordListPanelEl = document.getElementById('word-list-panel');
+        const wordListTitleEl = document.getElementById('word-list-title');
         const foundListEl = document.getElementById('found-list');
-
-        const finalScoreEl = document.getElementById('final-score');
-        const foundOfPossibleEl = document.getElementById('found-of-possible');
-        const allWordsListEl = document.getElementById('all-words-list');
+        const wordColumnsEl = document.getElementById('word-columns');
 
         // ================= Setup state =================
 
@@ -640,7 +647,6 @@
                 badge.className = 'order-badge';
                 dieEl.appendChild(badge);
 
-                dieEl.addEventListener('click', () => handleCellClick(cell.index));
                 gridEl.appendChild(dieEl);
             });
         }
@@ -651,8 +657,9 @@
             return path.map(i => board[i].match).join('');
         }
 
-        function handleCellClick(index) {
-            if (!gameActive) return;
+        // Advances the path by one letter based on the tapped/dragged cell.
+        // Returns true if the path changed.
+        function stepPath(index, allowRestart) {
             const posInPath = path.indexOf(index);
             if (posInPath !== -1) {
                 if (posInPath === path.length - 1) {
@@ -660,35 +667,42 @@
                 } else {
                     path = path.slice(0, posInPath + 1);
                 }
-            } else if (path.length === 0) {
-                path.push(index);
-            } else {
-                const last = path[path.length - 1];
-                if (neighborsOf[last].includes(index)) {
-                    path.push(index);
-                } else {
-                    showStatus('Letters must be adjacent on the board.', 'info');
-                    return;
-                }
+                return true;
             }
-            onPathChanged();
+            if (path.length === 0) {
+                path.push(index);
+                return true;
+            }
+            const last = path[path.length - 1];
+            if (neighborsOf[last].includes(index)) {
+                path.push(index);
+                return true;
+            }
+            if (allowRestart) {
+                // Starting a fresh press on an unconnected cell begins a new word.
+                path = [index];
+                return true;
+            }
+            return false;
         }
 
         function onPathChanged() {
             renderPathHighlight();
             const word = currentWord();
             currentWordEl.textContent = word ? word.toUpperCase() : ' ';
+            updateValidityHighlight(word);
             if (word.length === 0) {
-                showStatus('Tap adjacent letters to build a word.', 'info');
-            } else if (word.length < MIN_WORD_LENGTH) {
-                showStatus('Keep going — words need at least ' + MIN_WORD_LENGTH + ' letters.', 'info');
-            } else if (foundWords.some(f => f.word === word)) {
-                showStatus(word.toUpperCase() + ' — already found.', 'info');
-            } else if (WORD_SET.has(word)) {
-                showStatus(word.toUpperCase() + ' is a word — Submit it!', 'info');
-            } else {
-                showStatus(word.toUpperCase() + ' isn’t in the dictionary yet.', 'info');
+                showStatus('Drag or tap adjacent letters to build a word.', 'info');
             }
+        }
+
+        // Thickens the selection border when the current selection is a
+        // dictionary word that hasn't been found yet -- no new colors needed.
+        function updateValidityHighlight(word) {
+            const isNewValidWord = word.length >= MIN_WORD_LENGTH
+                && WORD_SET.has(word)
+                && !foundWords.some(f => f.word === word);
+            gridEl.classList.toggle('has-valid-word', isNewValidWord);
         }
 
         function renderPathHighlight() {
@@ -701,34 +715,157 @@
             });
         }
 
-        function clearPath() {
+        // Resets the selection without touching the status line, so a
+        // just-shown submit result (e.g. "+2 points!") isn't immediately
+        // overwritten by the idle hint.
+        function resetSelection() {
             path = [];
-            onPathChanged();
+            renderPathHighlight();
+            currentWordEl.textContent = ' ';
+            updateValidityHighlight('');
         }
+
+        function clearPath() {
+            resetSelection();
+            showStatus('Drag or tap adjacent letters to build a word.', 'info');
+        }
+
+        // ---- Pointer (mouse/touch/pen) handling ----
+        // A tap performs a single step (select/deselect/backtrack). A
+        // press-and-drag performs a step per letter entered and auto-submits
+        // the word on release, matching how Boggle is normally played.
+
+        let pointerActive = false;
+        let dragMoved = false;
+        let lastRawPos = null;
+        let dieCenters = [];
+        let dieHitRadius = 0;
+
+        // Caches each die's center point (in viewport coordinates), indexed
+        // by cell index, at the start of a drag.
+        function cacheDieCenters() {
+            dieCenters = new Array(board.length);
+            let size = 0;
+            gridEl.querySelectorAll('.die').forEach(dieEl => {
+                const idx = Number(dieEl.dataset.index);
+                const r = dieEl.getBoundingClientRect();
+                dieCenters[idx] = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                size = r.width;
+            });
+            // Generous relative to a diagonal neighbor's distance (~1.4x a
+            // cell's width) since candidates are restricted to nearby cells.
+            dieHitRadius = size * 1.6;
+        }
+
+        // Finds which nearby cell a point belongs to. Rather than searching
+        // every die on the board, this only considers the current path's
+        // last cell, that cell's neighbors, and cells already in the path
+        // (for backtracking). Restricting the candidate set — instead of
+        // picking the single closest die on the whole board — is what makes
+        // diagonal drags forgiving: the pointer just needs to be closer to
+        // the intended diagonal neighbor than to the last cell itself, not
+        // precisely over the die.
+        function nearestCandidateCell(x, y) {
+            if (path.length === 0) return null;
+            const lastIndex = path[path.length - 1];
+            const candidates = new Set([lastIndex, ...neighborsOf[lastIndex], ...path]);
+            let best = null;
+            let bestDist = Infinity;
+            candidates.forEach(i => {
+                const c = dieCenters[i];
+                if (!c) return;
+                const dist = Math.hypot(c.x - x, c.y - y);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = i;
+                }
+            });
+            if (best === null || bestDist > dieHitRadius) return null;
+            return best;
+        }
+
+        // Applies one drag step at a raw pointer position, if it lands on a
+        // different candidate cell than the current path tail.
+        function processDragPoint(x, y) {
+            const index = nearestCandidateCell(x, y);
+            if (index === null) return;
+            // Resolving back to the current tail is a no-op during a drag —
+            // stepPath would otherwise treat "re-arrive at the last cell" the
+            // same as "tap the last cell again", which deselects it.
+            if (path.length && index === path[path.length - 1]) return;
+            if (stepPath(index, false)) {
+                dragMoved = true;
+                onPathChanged();
+            }
+        }
+
+        gridEl.addEventListener('pointerdown', (e) => {
+            if (!gameActive) return;
+            const dieEl = e.target.closest('.die');
+            if (!dieEl) return;
+            pointerActive = true;
+            dragMoved = false;
+            cacheDieCenters();
+            gridEl.setPointerCapture(e.pointerId);
+            stepPath(Number(dieEl.dataset.index), true);
+            onPathChanged();
+            lastRawPos = { x: e.clientX, y: e.clientY };
+        });
+
+        gridEl.addEventListener('pointermove', (e) => {
+            if (!gameActive || !pointerActive) return;
+            const to = { x: e.clientX, y: e.clientY };
+            const from = lastRawPos || to;
+            // Browsers coalesce pointermove samples during fast drags, which
+            // would otherwise let the pointer "jump over" a cell — most
+            // noticeable on diagonals, where cells sit farther apart. Walking
+            // the segment between the last and current raw position in small
+            // steps ensures every cell it passes through gets processed.
+            const dist = Math.hypot(to.x - from.x, to.y - from.y);
+            const steps = Math.max(1, Math.ceil(dist / (dieHitRadius / 3 || 20)));
+            for (let s = 1; s <= steps; s++) {
+                const t = s / steps;
+                processDragPoint(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t);
+            }
+            lastRawPos = to;
+        });
+
+        function endPointerInteraction() {
+            if (!pointerActive) return;
+            pointerActive = false;
+            lastRawPos = null;
+            if (dragMoved && gameActive) {
+                submitWord();
+            }
+            dragMoved = false;
+        }
+
+        gridEl.addEventListener('pointerup', endPointerInteraction);
+        gridEl.addEventListener('pointercancel', endPointerInteraction);
 
         function submitWord() {
             if (!gameActive) return;
             const word = currentWord();
             if (word.length < MIN_WORD_LENGTH) {
                 showStatus('Words need at least ' + MIN_WORD_LENGTH + ' letters.', 'info');
-                clearPath();
+                resetSelection();
                 return;
             }
             if (foundWords.some(f => f.word === word)) {
                 showStatus(word.toUpperCase() + ' — already found.', 'info');
-                clearPath();
+                resetSelection();
                 return;
             }
             if (!WORD_SET.has(word)) {
                 showStatus(word.toUpperCase() + ' — not a valid word.', 'info');
-                clearPath();
+                resetSelection();
                 return;
             }
             const points = pointsForLength(word.length);
             foundWords.push({ word, points });
             score += points;
             showStatus(word.toUpperCase() + ' — +' + points + ' point' + (points === 1 ? '' : 's') + '!', 'success');
-            clearPath();
+            resetSelection();
             renderFoundWords();
             renderScore();
         }
@@ -756,6 +893,44 @@
                 li.textContent = f.word.toUpperCase() + ' (' + f.points + ')';
                 foundListEl.appendChild(li);
             });
+        }
+
+        // Renders every word the board contains, grouped into columns by
+        // length, in the same panel the found-words list occupies during
+        // play. Words the player already found are bolded/accented.
+        function renderWordColumns(allWordsSet) {
+            const allWords = sortWords([...allWordsSet]);
+            const foundSet = new Set(foundWords.map(f => f.word));
+            const byLength = new Map();
+            allWords.forEach(w => {
+                if (!byLength.has(w.length)) byLength.set(w.length, []);
+                byLength.get(w.length).push(w);
+            });
+
+            wordColumnsEl.innerHTML = '';
+            [...byLength.keys()].sort((a, b) => a - b).forEach(len => {
+                const col = document.createElement('div');
+                col.className = 'word-column';
+
+                const header = document.createElement('div');
+                header.className = 'word-column-header';
+                header.textContent = len + ' letters';
+                col.appendChild(header);
+
+                const ul = document.createElement('ul');
+                ul.className = 'word-list';
+                byLength.get(len).forEach(w => {
+                    const li = document.createElement('li');
+                    li.textContent = w.toUpperCase() + ' (' + pointsForLength(w.length) + ')';
+                    if (foundSet.has(w)) li.classList.add('found');
+                    ul.appendChild(li);
+                });
+                col.appendChild(ul);
+
+                wordColumnsEl.appendChild(col);
+            });
+
+            return allWords.length;
         }
 
         // ================= Timer =================
@@ -808,6 +983,19 @@
 
         // ================= Game flow =================
 
+        // Resets the in-game panels back to "playing" mode: the current-word
+        // builder and controls are shown, and the word-list panel shows the
+        // (empty) found-words list rather than the all-words columns.
+        function resetPanelsForPlay() {
+            currentWordEl.classList.remove('hidden');
+            wordControlsEl.classList.remove('hidden');
+            wordListTitleEl.textContent = 'Words Found';
+            wordListPanelEl.classList.remove('wide');
+            foundListEl.classList.remove('hidden');
+            wordColumnsEl.classList.add('hidden');
+            wordColumnsEl.innerHTML = '';
+        }
+
         function startGame() {
             score = 0;
             foundWords = [];
@@ -816,12 +1004,12 @@
             renderGrid();
             renderPathHighlight();
             currentWordEl.textContent = ' ';
-            showStatus('Tap adjacent letters to build a word.', 'info');
+            resetPanelsForPlay();
+            showStatus('Drag or tap adjacent letters to build a word.', 'info');
             renderFoundWords();
             renderScore();
 
             setupEl.classList.add('hidden');
-            endEl.classList.add('hidden');
             gameEl.classList.remove('hidden');
             endGameBtn.classList.remove('hidden');
             newGameBtn.classList.remove('hidden');
@@ -835,39 +1023,35 @@
             gameActive = false;
             clearInterval(timerInterval);
             path = [];
-            showStatus('Time’s up!', 'info');
-
+            renderPathHighlight();
+            gridEl.classList.remove('has-valid-word');
+            currentWordEl.classList.add('hidden');
+            wordControlsEl.classList.add('hidden');
+            endGameBtn.classList.add('hidden');
             showStatus('Solving board…', 'info');
+
             setTimeout(() => {
-                const allWords = solveBoard();
-                renderEndScreen(allWords);
-                gameEl.classList.add('hidden');
-                endGameBtn.classList.add('hidden');
-                endEl.classList.remove('hidden');
+                const allWordsSet = solveBoard();
+                const totalCount = renderWordColumns(allWordsSet);
+
+                wordListTitleEl.textContent = 'All Possible Words';
+                wordListPanelEl.classList.add('wide');
+                foundListEl.classList.add('hidden');
+                wordColumnsEl.classList.remove('hidden');
+
+                foundCountValueEl.textContent = foundWords.length + ' / ' + totalCount;
+                showStatus(
+                    'Game over — Score ' + score + ' — found ' + foundWords.length + ' of ' + totalCount + ' possible words.',
+                    'success'
+                );
             }, 20);
-        }
-
-        function renderEndScreen(allWordsSet) {
-            const allWords = sortWords([...allWordsSet]);
-            const foundSet = new Set(foundWords.map(f => f.word));
-
-            finalScoreEl.textContent = score;
-            foundOfPossibleEl.textContent = foundWords.length + ' of ' + allWords.length;
-
-            allWordsListEl.innerHTML = '';
-            allWords.forEach(w => {
-                const li = document.createElement('li');
-                li.textContent = w.toUpperCase() + ' (' + pointsForLength(w.length) + ')';
-                if (foundSet.has(w)) li.classList.add('found');
-                allWordsListEl.appendChild(li);
-            });
         }
 
         function returnToSetup() {
             gameActive = false;
             clearInterval(timerInterval);
+            resetPanelsForPlay();
             gameEl.classList.add('hidden');
-            endEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
             newGameBtn.classList.add('hidden');
             setupEl.classList.remove('hidden');
