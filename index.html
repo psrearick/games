@@ -58,6 +58,18 @@
             gap: clamp(12px, 2.4vmin, 28px);
         }
 
+        .gameList {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(12px, 2.4vmin, 28px);
+        }
+
+        .gameList p {
+            color: var(--bar);
+            text-align: center;
+
+        }
+
         button {
             padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
             font-size: clamp(13px, 1.9vmin, 20px);
@@ -83,15 +95,24 @@
     <div class="row" id="row"></div>
 
     <div class="controls">
-        <a href="boggle.html">
-            <button>Boggle</button>
-        </a>
-        <a href="yahtzee.html">
-            <button>Yatzee</button>
-        </a>
-        <a href="yahtzee-roller.html">
-            <button>Yatzee Dice Roller</button>
-        </a>
+        <div class="gameList">
+            <p>Boggle</p>
+            <a href="boggle.html">
+                <button>Boggle</button>
+            </a>
+            <a href="boggle-static.html">
+                <button>Boggle (Static)</button>
+            </a>
+        </div>
+        <div class="gameList">
+            <p>Boggle</p>
+            <a href="yahtzee.html">
+                <button>Yatzee</button>
+            </a>
+            <a href="yahtzee-roller.html">
+                <button>Yatzee Dice Roller</button>
+            </a>
+        </div>
     </div>
     <script>
         if ("serviceWorker" in navigator) {
