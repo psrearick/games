@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <title>Boggle</title>
@@ -171,12 +171,28 @@
             color: var(--warn);
         }
 
+        /* ---- Game screen ---- */
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(12px, 2vmin, 24px);
+            width: 100%;
+        }
+
         /* ---- Grid ---- */
         .grid {
             display: grid;
             gap: clamp(6px, 1.1vmin, 14px);
             width: min(80vw, 60vh);
             touch-action: none;
+        }
+
+        /* Once the game ends, touching a die does nothing gameplay-wise, so
+           drop the touch-action restriction to let a touch drag over the
+           board scroll the page like anywhere else. */
+        .grid.inactive {
+            touch-action: auto;
         }
 
         .die {
@@ -329,6 +345,20 @@
 
         .word-list-panel.wide {
             width: min(94vw, 720px);
+        }
+
+        /* At game end, let the all-words panel grow to its full height and
+           rely on normal page scrolling instead of a cramped inner
+           scrollbox -- otherwise the list is stuck tiny and every bit of
+           scrolling has to happen inside a small nested box. */
+        .word-list-panel.expanded .word-columns {
+            max-height: none;
+            overflow-y: visible;
+        }
+
+        .word-list-panel.expanded .word-columns .word-list {
+            max-height: none;
+            overflow-y: visible;
         }
 
         .word-columns {
@@ -663,10 +693,13 @@
             const posInPath = path.indexOf(index);
             if (posInPath !== -1) {
                 if (posInPath === path.length - 1) {
-                    path.pop();
-                } else {
-                    path = path.slice(0, posInPath + 1);
+                    // Re-arriving at the tail (tapping the last-selected die
+                    // again, or a drag that loops back onto it) is a no-op
+                    // here -- tapping the tail submits the word instead of
+                    // deselecting it, and that's handled by the caller.
+                    return false;
                 }
+                path = path.slice(0, posInPath + 1);
                 return true;
             }
             if (path.length === 0) {
@@ -737,6 +770,7 @@
 
         let pointerActive = false;
         let dragMoved = false;
+        let tapOnTail = false;
         let lastRawPos = null;
         let dieCenters = [];
         let dieHitRadius = 0;
@@ -765,22 +799,39 @@
         // diagonal drags forgiving: the pointer just needs to be closer to
         // the intended diagonal neighbor than to the last cell itself, not
         // precisely over the die.
+        //
+        // On a square grid, straight-line distance to a diagonal neighbor
+        // and to the two orthogonal neighbors between it and the last cell
+        // are exactly equal right at the shared corner -- so any tiny wobble
+        // in a hand-drawn diagonal drag (which is never a perfect 45° line)
+        // tips the "nearest center" pick toward whichever orthogonal cell
+        // the pointer strayed closer to. Discounting diagonal candidates'
+        // effective distance biases that whole ambiguous region toward the
+        // diagonal cell instead, which is what a diagonal drag almost always
+        // means to do.
+        const DIAGONAL_BIAS = 0.65;
+
         function nearestCandidateCell(x, y) {
             if (path.length === 0) return null;
             const lastIndex = path[path.length - 1];
+            const lastCell = board[lastIndex];
             const candidates = new Set([lastIndex, ...neighborsOf[lastIndex], ...path]);
             let best = null;
-            let bestDist = Infinity;
+            let bestScore = Infinity;
             candidates.forEach(i => {
                 const c = dieCenters[i];
                 if (!c) return;
-                const dist = Math.hypot(c.x - x, c.y - y);
-                if (dist < bestDist) {
-                    bestDist = dist;
+                let dist = Math.hypot(c.x - x, c.y - y);
+                const cell = board[i];
+                const isDiagonal = Math.abs(cell.row - lastCell.row) === 1
+                    && Math.abs(cell.col - lastCell.col) === 1;
+                if (isDiagonal) dist *= DIAGONAL_BIAS;
+                if (dist < bestScore) {
+                    bestScore = dist;
                     best = i;
                 }
             });
-            if (best === null || bestDist > dieHitRadius) return null;
+            if (best === null || bestScore > dieHitRadius) return null;
             return best;
         }
 
@@ -807,8 +858,18 @@
             dragMoved = false;
             cacheDieCenters();
             gridEl.setPointerCapture(e.pointerId);
-            stepPath(Number(dieEl.dataset.index), true);
-            onPathChanged();
+            const index = Number(dieEl.dataset.index);
+            // Pressing down on the die that's currently the tail of the
+            // path is ambiguous until release: it might be a plain tap
+            // (submit the word) or the start of a drag onward to a new
+            // letter (extend the word). Leave the path untouched for now --
+            // extending is handled by the drag steps below, and a plain tap
+            // is resolved in endPointerInteraction.
+            tapOnTail = path.length > 0 && path[path.length - 1] === index;
+            if (!tapOnTail) {
+                stepPath(index, true);
+                onPathChanged();
+            }
             lastRawPos = { x: e.clientX, y: e.clientY };
         });
 
@@ -834,10 +895,16 @@
             if (!pointerActive) return;
             pointerActive = false;
             lastRawPos = null;
-            if (dragMoved && gameActive) {
+            // A drag submits the (possibly just-extended) word on release.
+            // A plain tap that landed on the already-selected tail also
+            // submits -- tapping the last letter again finishes the word
+            // instead of deselecting it, matching tap-to-build one letter
+            // at a time.
+            if (gameActive && (dragMoved || tapOnTail)) {
                 submitWord();
             }
             dragMoved = false;
+            tapOnTail = false;
         }
 
         gridEl.addEventListener('pointerup', endPointerInteraction);
@@ -991,9 +1058,11 @@
             wordControlsEl.classList.remove('hidden');
             wordListTitleEl.textContent = 'Words Found';
             wordListPanelEl.classList.remove('wide');
+            wordListPanelEl.classList.remove('expanded');
             foundListEl.classList.remove('hidden');
             wordColumnsEl.classList.add('hidden');
             wordColumnsEl.innerHTML = '';
+            gridEl.classList.remove('inactive');
         }
 
         function startGame() {
@@ -1025,6 +1094,9 @@
             path = [];
             renderPathHighlight();
             gridEl.classList.remove('has-valid-word');
+            // Dice do nothing once the game is over, so let a touch drag
+            // over the board scroll the page instead of being swallowed.
+            gridEl.classList.add('inactive');
             currentWordEl.classList.add('hidden');
             wordControlsEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
@@ -1036,6 +1108,7 @@
 
                 wordListTitleEl.textContent = 'All Possible Words';
                 wordListPanelEl.classList.add('wide');
+                wordListPanelEl.classList.add('expanded');
                 foundListEl.classList.add('hidden');
                 wordColumnsEl.classList.remove('hidden');
 
