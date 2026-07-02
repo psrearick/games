@@ -6,39 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
+    <link rel="stylesheet" href="shared.css">
     <title>Boggle</title>
     <style>
-        :root {
-            --bg: oklch(0.3073 0.0106 253.99);
-            --die: oklch(0.3838 0.0143 252.26);
-            --ink: oklch(0.624 0.0035 247.86);
-            --bar: oklch(0.5969 0.0442 248.57);
-            --die-border: oklch(from var(--die) calc(l - 0.10) c h);
-            --die-shadow: oklch(from var(--bg) calc(l - 0.28) c h / 0.25);
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            animation: none !important;
-            transition: none !important;
-        }
-
-        body {
-            background-color: var(--bg);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            overflow: hidden;
-            font-family: 'Lato', 'Open Sans', sans-serif, serif;
-        }
-
         .grid {
             display: grid;
             /* columns set by JS */
@@ -81,39 +51,18 @@
             border-radius: 1px;
         }
 
-        .button-bar {
-            position: fixed;
-            display: flex;
-            justify-content: space-between;
-            right: 0;
-            top: 0;
-            left: 0;
-            padding: 1rem;
-        }
-
-        button {
-            padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
-            font-size: clamp(13px, 1.9vmin, 20px);
-            font-weight: bold;
-            background: var(--btn);
-            color: var(--ink);
-            border: 2px solid var(--die-border);
-            border-radius: clamp(4px, 0.7vmin, 9px);
-            cursor: pointer;
-            letter-spacing: 0.06em;
-        }
-
-        button:active {
-            background: var(--btn-press);
-        }
     </style>
 </head>
 
 <body>
 
     <div class="button-bar">
-        <a href="index.html"><button>Home</button></a>
-        <button id="new-game">New Game</button>
+        <div class="left">
+            <a href="index.html"><button>Home</button></a>
+        </div>
+        <div class="right">
+            <button id="new-game">New Game</button>
+        </div>
     </div>
 
     <div class="grid" id="grid"></div>

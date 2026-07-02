@@ -43,23 +43,18 @@ boggle.html            Boggle (dynamic board + dictionary)
 boggle-static.html     Boggle (static/simplified variant)
 yahtzee.html            Yahtzee scorecard
 yahtzee-roller.html    Standalone dice roller
+shared.css             Shared color tokens, reset, and reusable components (buttons, button bar, setup panel, etc.)
 words.js / words.txt    Word list used for Boggle validation
 manifest.json          PWA manifest
-sw.js                  Service worker (caches core files for offline use)
+sw.js                  Service worker (network-first, offline fallback cache)
 ```
 
 ## Design guidelines
 
 When adding or editing a game, stay consistent with the rest of the repo:
 
-- Define colors as `oklch(...)` custom properties in a `:root` block (see any existing game's `<style>` for the current palette), and derive related shades with `oklch(from var(--x) ...)` rather than hardcoding new hex colors.
+- Link [shared.css](shared.css) from `<head>` (`<link rel="stylesheet" href="shared.css">`) instead of redefining colors, the reset, or common components. It already provides the `:root` color tokens, the animation/transition reset, `body`/`body.scrollable`, `button`, `.button-bar` (with `.left`/`.right` wrapper divs), `.controls`, `.setup`, `.status`/`.heading`, and text `input` styling. Only put page-specific CSS (the board, dice, scorecard, etc.) in the page's own `<style>` block.
+- If a game needs new colors, add them as `oklch(...)` custom properties to `shared.css`'s `:root`, and derive related shades with `oklch(from var(--x) ...)` rather than hardcoding new hex colors or redefining tokens locally.
 - Keep contrast low — avoid pure white text on pure black, or highly saturated accent colors.
-- Disable animations and transitions globally:
-  ```css
-  *, *::before, *::after {
-      animation: none !important;
-      transition: none !important;
-  }
-  ```
-- No flashing, blinking, or auto-playing motion of any kind.
-- Each game should remain a single, dependency-free HTML file so it keeps working offline via the service worker.
+- No flashing, blinking, or auto-playing motion of any kind (the global animation/transition reset in `shared.css` enforces this).
+- Each game should remain a single, dependency-free HTML file (aside from the shared `shared.css`/`words.js`) so it keeps working offline via the service worker — and if you add a new page, add it to `PRECACHE_URLS` in [sw.js](sw.js) so it's available offline immediately, not just after a first online visit.
