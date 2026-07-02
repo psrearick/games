@@ -9,18 +9,54 @@
     <link rel="stylesheet" href="shared.css">
     <title>Yahtzee Dice</title>
     <style>
+        /* shared.css only sets a min-height on body, which is right for
+           other games (Boggle intentionally grows taller than the viewport
+           post-game). Here we want the opposite: a hard ceiling so the
+           scorecard below has a real budget to shrink against instead of
+           just pushing the whole page taller than the screen. */
+        body.scrollable {
+            height: 100dvh;
+        }
+
+        /* ---- Game screen: a fitted column that fills the viewport below
+           the button bar, so the dice + scorecard scale up to use a big
+           screen (TV) instead of sitting tiny in a sea of empty space, and
+           scale down to avoid needing a page scroll on a short one. The
+           scorecard (flex: 1) absorbs whatever vertical space is left over
+           after the status line and dice/roll area take their share; if it
+           still doesn't fit (e.g. 8 players on a short phone), only the
+           scorecard itself scrolls internally rather than the whole page. */
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            gap: clamp(10px, 1.2vh, 18px);
+        }
+
+        .dice-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(16px, 2vh, 24px);
+            flex: 0 0 auto;
+        }
+
         .row {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: clamp(8px, 1.6vmin, 20px);
-            width: min(94vw, 700px);
+            gap: clamp(6px, 1vh, 16px);
+            width: min(94vw, 64vh, 1200px);
         }
 
         .die {
             aspect-ratio: 1 / 1;
             background: var(--die);
             border: 2px solid var(--die-border);
-            border-radius: clamp(6px, 1vmin, 14px);
+            border-radius: clamp(6px, 1vmin, 16px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -34,11 +70,16 @@
         }
 
         .number {
-            font-size: clamp(30px, 8vmin, 90px);
+            font-size: clamp(26px, 8vmin, 120px);
             font-weight: bold;
             color: var(--ink);
             line-height: 1;
             user-select: none;
+        }
+
+        #rollBtn {
+            font-size: clamp(13px, 2.2vh, 26px);
+            padding: clamp(8px, 1.4vh, 20px) clamp(16px, 2.4vh, 36px);
         }
 
         /* ---- Setup panel ---- */
@@ -56,6 +97,35 @@
             letter-spacing: 0.05em;
         }
 
+        /* Custom up/down stepper for player count -- avoids the native
+           number input, which on mobile pops a full number keyboard and
+           lets you type past max (backspacing a single-digit value leaves
+           nothing to edit, so 2 -> 3 isn't really reachable by typing). */
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stepper button {
+            width: clamp(32px, 8vmin, 44px);
+            height: clamp(32px, 8vmin, 44px);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 4vmin, 24px);
+            line-height: 1;
+        }
+
+        .stepper-value {
+            min-width: 1.5ch;
+            text-align: center;
+            font-size: clamp(16px, 2.4vmin, 20px);
+            font-weight: bold;
+            color: var(--ink);
+        }
+
         .player-names {
             display: flex;
             flex-direction: column;
@@ -69,22 +139,35 @@
 
         /* ---- Score card ---- */
         .card-wrap {
-            width: min(96vw, 900px);
-            overflow-x: auto;
+            width: min(97vw, 1700px);
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            /* A table's own rows don't stretch to fill an explicit height,
+               so instead of forcing that, size rows directly (via vh-based
+               font/padding below) and just center the whole table in
+               whatever vertical space is left over. "safe" falls back to
+               top-alignment if the table is too big to fit -- plain
+               "center" would clip the header row off the top in that case,
+               which is the one row you can least afford to lose. */
+            display: flex;
+            flex-direction: column;
+            justify-content: safe center;
         }
 
         table.scorecard {
             border-collapse: collapse;
             width: 100%;
+            flex: 0 0 auto;
             color: var(--ink);
         }
 
         table.scorecard th,
         table.scorecard td {
             border: 1px solid var(--die-border);
-            padding: clamp(4px, 1vmin, 10px);
+            padding: clamp(2px, 0.32vh, 14px) clamp(3px, 0.6vw, 14px);
             text-align: center;
-            font-size: clamp(11px, 1.6vmin, 16px);
+            font-size: clamp(11px, 2.45vh, 32px);
             white-space: nowrap;
         }
 
@@ -93,6 +176,8 @@
             text-align: left;
             font-weight: bold;
             background: var(--die);
+            white-space: normal;
+            min-width: 108px;
         }
 
         table.scorecard th {
@@ -151,8 +236,12 @@
     <div class="setup" id="setup">
         <div class="status">Set Up Players</div>
         <div class="setup-row">
-            <label for="playerCount">Number of Players</label>
-            <input type="number" id="playerCount" min="1" max="8" value="2">
+            <label id="playerCountLabel">Number of Players</label>
+            <div class="stepper" role="group" aria-labelledby="playerCountLabel">
+                <button type="button" id="playerCountDown" aria-label="Fewer players">−</button>
+                <div class="stepper-value" id="playerCountValue" aria-live="polite">2</div>
+                <button type="button" id="playerCountUp" aria-label="More players">+</button>
+            </div>
         </div>
         <div class="player-names" id="playerNames"></div>
         <button id="startBtn">Start Game</button>
@@ -162,10 +251,11 @@
     <div id="game" class="hidden">
         <div class="status" id="status">Press Roll to Start</div>
 
-        <div class="row" id="row"></div>
-
-        <div class="controls">
-            <button id="rollBtn">Roll</button>
+        <div class="dice-area">
+            <div class="row" id="row"></div>
+            <div class="controls">
+                <button id="rollBtn">Roll</button>
+            </div>
         </div>
 
         <div class="card-wrap">
@@ -205,7 +295,9 @@
         // ---- DOM refs ----
         const setupEl = document.getElementById('setup');
         const gameEl = document.getElementById('game');
-        const playerCountInput = document.getElementById('playerCount');
+        const playerCountValueEl = document.getElementById('playerCountValue');
+        const playerCountDownBtn = document.getElementById('playerCountDown');
+        const playerCountUpBtn = document.getElementById('playerCountUp');
         const playerNamesEl = document.getElementById('playerNames');
         const startBtn = document.getElementById('startBtn');
         const newGameBtn = document.getElementById('newGameBtn');
@@ -216,19 +308,21 @@
         const scorecardEl = document.getElementById('scorecard');
 
         // ---- Game state ----
+        const MIN_PLAYERS = 1;
+        const MAX_PLAYERS = 8;
         let dice = [];
         let dieEls = [];
         let rollsLeft = MAX_ROLLS;
         let players = [];
         let currentPlayer = 0;
         let gameOver = false;
+        let playerCount = 2;
 
         // ================= Setup screen =================
 
         function renderPlayerNameInputs() {
-            const count = clampPlayerCount();
             playerNamesEl.innerHTML = '';
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < playerCount; i++) {
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.placeholder = 'Player ' + (i + 1) + ' name';
@@ -238,18 +332,19 @@
             }
         }
 
-        function clampPlayerCount() {
-            let n = parseInt(playerCountInput.value, 10);
-            if (isNaN(n)) n = 2;
-            n = Math.max(1, Math.min(8, n));
-            playerCountInput.value = n;
-            return n;
+        function setPlayerCount(n) {
+            playerCount = Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, n));
+            playerCountValueEl.textContent = playerCount;
+            playerCountDownBtn.disabled = playerCount <= MIN_PLAYERS;
+            playerCountUpBtn.disabled = playerCount >= MAX_PLAYERS;
+            renderPlayerNameInputs();
         }
 
-        playerCountInput.addEventListener('input', renderPlayerNameInputs);
+        playerCountDownBtn.addEventListener('click', () => setPlayerCount(playerCount - 1));
+        playerCountUpBtn.addEventListener('click', () => setPlayerCount(playerCount + 1));
 
         startBtn.addEventListener('click', () => {
-            const count = clampPlayerCount();
+            const count = playerCount;
             const nameInputs = playerNamesEl.querySelectorAll('input');
             players = Array.from({ length: count }, (_, i) => {
                 const typed = nameInputs[i] && nameInputs[i].value.trim();
@@ -643,7 +738,7 @@
 
         rollBtn.addEventListener('click', roll);
 
-        renderPlayerNameInputs();
+        setPlayerCount(playerCount);
     </script>
     <script>
         if ("serviceWorker" in navigator) {
