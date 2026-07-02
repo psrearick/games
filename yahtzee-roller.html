@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="icon-512x512.png">
+    <title>Yahtzee Dice</title>
+    <style>
+        :root {
+            --bg: oklch(0.3073 0.0106 253.99);
+            --die: oklch(0.3838 0.0143 252.26);
+            --die-kept: oklch(from var(--die) calc(l + 0.06) c h);
+            --ink: oklch(0.624 0.0035 247.86);
+            --bar: oklch(0.5969 0.0442 248.57);
+            --die-border: oklch(from var(--die) calc(l - 0.10) c h);
+            --die-shadow: oklch(from var(--bg) calc(l - 0.28) c h / 0.25);
+            --btn: oklch(from var(--die) calc(l - 0.06) c h);
+            --btn-press: oklch(from var(--die) calc(l - 0.14) c h);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            animation: none !important;
+            transition: none !important;
+        }
+
+        body {
+            background-color: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(16px, 3vmin, 40px);
+            padding: 16px;
+            overflow: hidden;
+            font-family: 'Lato', 'Open Sans', sans-serif, serif;
+        }
+
+        .status {
+            color: var(--bar);
+            font-size: clamp(16px, 2.6vmin, 30px);
+            font-weight: bold;
+            letter-spacing: 0.08em;
+            user-select: none;
+            text-align: center;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: clamp(8px, 1.6vmin, 20px);
+            width: min(94vw, 1100px);
+        }
+
+        .die {
+            aspect-ratio: 1 / 1;
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: clamp(6px, 1vmin, 14px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 4px 10px var(--die-shadow);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .die.kept {
+            background: var(--die-kept);
+        }
+
+        .number {
+            font-size: clamp(30px, 10vmin, 120px);
+            font-weight: bold;
+            color: var(--ink);
+            line-height: 1;
+            user-select: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: clamp(12px, 2.4vmin, 28px);
+        }
+
+        .button-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 1rem;
+        }
+
+        button {
+            padding: clamp(7px, 1.1vmin, 13px) clamp(18px, 2.8vmin, 34px);
+            font-size: clamp(13px, 1.9vmin, 20px);
+            font-weight: bold;
+            background: var(--btn);
+            color: var(--ink);
+            border: 2px solid var(--die-border);
+            border-radius: clamp(4px, 0.7vmin, 9px);
+            cursor: pointer;
+            letter-spacing: 0.06em;
+        }
+
+        button:active {
+            background: var(--btn-press);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="button-bar"><a href="index.html"><button>Home</button></a></div>
+
+    <div class="status" id="status">Press Roll to Start</div>
+
+    <div class="row" id="row"></div>
+
+    <div class="controls">
+        <button id="rollBtn">Roll</button>
+        <button id="resetBtn">Reset</button>
+    </div>
+
+    <script>
+        const COUNT = 5;
+        const row = document.getElementById('row');
+        const status = document.getElementById('status');
+        const rollBtn = document.getElementById('rollBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // Each die: { value: null | 1-6, kept: boolean }
+        let dice = [];
+        let dieEls = [];
+        let rollNum = 0;
+
+        function buildDice() {
+            row.innerHTML = '';
+            dieEls = [];
+            for (let i = 0; i < COUNT; i++) {
+                const die = document.createElement('div');
+                die.className = 'die';
+
+                const number = document.createElement('span');
+                number.className = 'number';
+
+                die.appendChild(number);
+                die.addEventListener('click', () => toggleKeep(i));
+
+                row.appendChild(die);
+                dieEls.push({ die, number });
+            }
+        }
+
+        function updateDie(i) {
+            const d = dice[i];
+            const { die, number } = dieEls[i];
+            number.textContent = d.value === null ? '' : d.value;
+            die.classList.toggle('kept', d.kept);
+        }
+
+        function updateAll() {
+            for (let i = 0; i < COUNT; i++) updateDie(i);
+        }
+
+        function toggleKeep(i) {
+            // Can only keep a die that has been rolled.
+            if (dice[i].value === null) return;
+            dice[i].kept = !dice[i].kept;
+            updateDie(i);
+        }
+
+        function roll() {
+            // Nothing to roll if every die is being kept.
+            const hasRollable = dice.some(d => !d.kept);
+            if (!hasRollable) return;
+
+            dice.forEach(d => {
+                if (!d.kept) {
+                    d.value = 1 + Math.floor(Math.random() * 6);
+                }
+            });
+            rollNum++;
+            updateAll();
+            status.textContent = 'Roll ' + rollNum;
+        }
+
+        function reset() {
+            dice.forEach(d => { d.value = null; d.kept = false; });
+            rollNum = 0;
+            updateAll();
+            status.textContent = 'Press Roll to Start';
+        }
+
+        function init() {
+            dice = Array.from({ length: COUNT }, () => ({ value: null, kept: false }));
+            buildDice();
+            reset();
+        }
+
+        rollBtn.addEventListener('click', roll);
+        resetBtn.addEventListener('click', reset);
+
+        init();
+    </script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js");
+            });
+        }
+    </script>
+</body>
+
+</html>

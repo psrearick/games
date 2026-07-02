@@ -284,19 +284,21 @@
             { key: 'sixes', label: 'Sixes', face: 6 },
         ];
 
-        const LOWER_CATEGORIES = [
+        const LOWER_CATEGORIES_BEFORE_BONUS = [
             { key: 'threeKind', label: '3 of a Kind' },
             { key: 'fourKind', label: '4 of a Kind' },
             { key: 'fullHouse', label: 'Full House' },
             { key: 'smallStraight', label: 'Sm. Straight' },
             { key: 'largeStraight', label: 'Lg. Straight' },
             { key: 'yahtzee', label: 'Yahtzee' },
-            { key: 'chance', label: 'Chance' },
         ];
+        const CHANCE_CATEGORY = { key: 'chance', label: 'Chance' };
+        const LOWER_CATEGORIES = [...LOWER_CATEGORIES_BEFORE_BONUS, CHANCE_CATEGORY];
 
         const ALL_CATEGORIES = [...UPPER_CATEGORIES, ...LOWER_CATEGORIES];
         const UPPER_BONUS_THRESHOLD = 63;
         const UPPER_BONUS = 35;
+        const YAHTZEE_BONUS_POINTS = 100;
 
         // ---- DOM refs ----
         const setupEl = document.getElementById('setup');
@@ -352,6 +354,7 @@
                 return {
                     name: typed || ('Player ' + (i + 1)),
                     scores: Object.fromEntries(ALL_CATEGORIES.map(c => [c.key, null])),
+                    yahtzeeBonusCount: 0,
                 };
             });
             currentPlayer = 0;
@@ -455,7 +458,25 @@
             return counts;
         }
 
-        function calcScore(key, values) {
+        function isYahtzeeRoll(values) {
+            return values.length === COUNT && countsOf(values).some(c => c === 5);
+        }
+
+        // The Upper Section category that a Yahtzee roll (five-of-a-kind) matches,
+        // e.g. five 4s matches the Fours box.
+        function matchingUpperKey(values) {
+            const face = values[0];
+            const upper = UPPER_CATEGORIES.find(c => c.face === face);
+            return upper ? upper.key : null;
+        }
+
+        // Joker Rules apply when a Yahtzee is rolled AFTER the Yahtzee box has
+        // already been scored (with 50 or with 0) for that player.
+        function jokerActiveFor(player, values) {
+            return !!player && isYahtzeeRoll(values) && player.scores.yahtzee !== null;
+        }
+
+        function calcScore(key, values, player) {
             if (values.length < COUNT) return 0;
             const counts = countsOf(values);
             const sum = values.reduce((a, b) => a + b, 0);
@@ -463,19 +484,36 @@
             const upper = UPPER_CATEGORIES.find(c => c.key === key);
             if (upper) return counts[upper.face] * upper.face;
 
+            // Under the Joker Rules, once the matching Upper Section box is
+            // filled, Full House / Small Straight / Large Straight always
+            // score their fixed values for a Joker (extra Yahtzee) roll.
+            let jokerBonusValue = null;
+            if (jokerActiveFor(player, values)) {
+                const upperKey = matchingUpperKey(values);
+                const upperFilled = upperKey ? player.scores[upperKey] !== null : false;
+                if (upperFilled) {
+                    if (key === 'fullHouse') jokerBonusValue = 25;
+                    else if (key === 'smallStraight') jokerBonusValue = 30;
+                    else if (key === 'largeStraight') jokerBonusValue = 40;
+                }
+            }
+
             switch (key) {
                 case 'threeKind':
                     return counts.some(c => c >= 3) ? sum : 0;
                 case 'fourKind':
                     return counts.some(c => c >= 4) ? sum : 0;
                 case 'fullHouse':
+                    if (jokerBonusValue !== null) return jokerBonusValue;
                     return counts.includes(3) && counts.includes(2) ? 25 : 0;
                 case 'smallStraight': {
+                    if (jokerBonusValue !== null) return jokerBonusValue;
                     const set = new Set(values);
                     const runs = [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]];
                     return runs.some(run => run.every(v => set.has(v))) ? 30 : 0;
                 }
                 case 'largeStraight': {
+                    if (jokerBonusValue !== null) return jokerBonusValue;
                     const set = new Set(values);
                     const runs = [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]];
                     return runs.some(run => run.every(v => set.has(v)) && set.size === 5) ? 40 : 0;
@@ -497,9 +535,13 @@
             return upperSubtotal(p) >= UPPER_BONUS_THRESHOLD ? UPPER_BONUS : 0;
         }
 
+        function yahtzeeBonusPoints(p) {
+            return p.yahtzeeBonusCount * YAHTZEE_BONUS_POINTS;
+        }
+
         function totalScore(p) {
             const lower = LOWER_CATEGORIES.reduce((sum, c) => sum + (p.scores[c.key] || 0), 0);
-            return upperSubtotal(p) + upperBonus(p) + lower;
+            return upperSubtotal(p) + upperBonus(p) + lower + yahtzeeBonusPoints(p);
         }
 
         function allFilled(p) {
@@ -573,7 +615,22 @@
             });
             tbody.appendChild(bonusRow);
 
-            addCategoryRows(LOWER_CATEGORIES);
+            addCategoryRows(LOWER_CATEGORIES_BEFORE_BONUS);
+
+            const yahtzeeBonusRow = document.createElement('tr');
+            const yahtzeeBonusLabel = document.createElement('td');
+            yahtzeeBonusLabel.className = 'category';
+            yahtzeeBonusLabel.textContent = 'Yahtzee Bonus (100 ea.)';
+            yahtzeeBonusRow.appendChild(yahtzeeBonusLabel);
+            players.forEach((p, i) => {
+                const td = document.createElement('td');
+                td.dataset.role = 'yahtzeeBonus';
+                td.dataset.playerIndex = i;
+                yahtzeeBonusRow.appendChild(td);
+            });
+            tbody.appendChild(yahtzeeBonusRow);
+
+            addCategoryRows([CHANCE_CATEGORY]);
 
             const totalRow = document.createElement('tr');
             totalRow.className = 'total';
@@ -615,7 +672,7 @@
                         td.classList.add('filled');
                         td.classList.remove('pickable');
                     } else if (canPick && i === currentPlayer) {
-                        td.textContent = calcScore(cat.key, values);
+                        td.textContent = calcScore(cat.key, values, p);
                         td.classList.add('pickable');
                         td.classList.remove('filled');
                     } else {
@@ -628,9 +685,15 @@
             players.forEach((p, i) => {
                 const subEl = scorecardEl.querySelector('[data-role="upperSubtotal"][data-player-index="' + i + '"]');
                 const bonusEl = scorecardEl.querySelector('[data-role="upperBonus"][data-player-index="' + i + '"]');
+                const yahtzeeBonusEl = scorecardEl.querySelector('[data-role="yahtzeeBonus"][data-player-index="' + i + '"]');
                 const totalEl = scorecardEl.querySelector('[data-role="total"][data-player-index="' + i + '"]');
                 if (subEl) subEl.textContent = upperSubtotal(p);
                 if (bonusEl) bonusEl.textContent = upperBonus(p);
+                if (yahtzeeBonusEl) {
+                    yahtzeeBonusEl.textContent = p.yahtzeeBonusCount > 0
+                        ? '✓'.repeat(p.yahtzeeBonusCount) + ' ' + yahtzeeBonusPoints(p)
+                        : '';
+                }
                 if (totalEl) totalEl.textContent = totalScore(p);
             });
         }
@@ -643,7 +706,15 @@
             const values = diceValues();
             if (values.length !== COUNT) return; // must roll at least once
 
-            p.scores[categoryKey] = calcScore(categoryKey, values);
+            // Yahtzee Bonus: an extra Yahtzee (five-of-a-kind) earns a 100-point
+            // bonus chip only if the Yahtzee box was already scored with 50.
+            // Must be checked before this category's own score is recorded,
+            // since scoring the Yahtzee box itself for the first time doesn't count.
+            if (isYahtzeeRoll(values) && p.scores.yahtzee === 50) {
+                p.yahtzeeBonusCount++;
+            }
+
+            p.scores[categoryKey] = calcScore(categoryKey, values, p);
             advanceTurn();
         }
 
