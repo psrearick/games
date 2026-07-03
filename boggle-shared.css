@@ -1,0 +1,195 @@
+/* Shared setup-screen and board/word-list styles for boggle.html and
+   boggle-static.html. See shared.css for site-wide tokens/reset that
+   apply to every game on this site -- this file is Boggle-specific. */
+
+button.option {
+    font-weight: normal;
+    letter-spacing: 0.03em;
+}
+
+button.option.active {
+    background: var(--die-kept);
+    color: var(--accent);
+    font-weight: bold;
+}
+
+.setup-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.setup-row .label {
+    color: var(--ink);
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    font-size: clamp(13px, 1.8vmin, 17px);
+}
+
+.option-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.dictionary-status {
+    color: var(--ink);
+    font-size: clamp(12px, 1.5vmin, 15px);
+    opacity: 0.85;
+    text-align: center;
+}
+
+.status-line {
+    min-height: 1.2em;
+    font-size: clamp(12px, 1.6vmin, 16px);
+    color: var(--ink);
+    text-align: center;
+}
+
+/* ---- Board area: grid + word list panel ---- */
+.board-area {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: clamp(16px, 3vmin, 40px);
+    width: 100%;
+}
+
+/* Once the word list is showing alongside the board, shrink the board so
+   both sit side by side on one screen instead of the list wrapping below
+   and needing the page to grow taller. wordListHeightBudget() in
+   boggle-shared.js matches this width, which is what lets the list decide,
+   per length, whether it needs to wrap into sub-columns. The transition is
+   scoped to this rule (rather than left to shared.css's site-wide reset)
+   so the board sliding over to make room for the reveal is a deliberate,
+   gentle motion instead of an instant jump. */
+#game.with-list .grid {
+    width: min(38vw, 48vh);
+    transition: width 0.8s ease !important;
+}
+
+/* ---- Dice ---- */
+.grid {
+    display: grid;
+    gap: clamp(6px, 1.1vmin, 14px);
+}
+
+.die {
+    aspect-ratio: 1 / 1;
+    background: var(--die);
+    border: 2px solid var(--die-border);
+    border-radius: clamp(5px, 0.9vmin, 12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 4px 10px var(--die-shadow);
+    position: relative;
+}
+
+.letter {
+    font-weight: bold;
+    color: var(--ink);
+    line-height: 1;
+    user-select: none;
+}
+
+/* "Qu" is the only letter with a descender (the tail on the Q), so unlike
+   the other glyphs its ink sits visibly lower than its line box's
+   baseline-centered position -- nudge it back up to match. */
+.letter.descender {
+    transform: translateY(-0.07em);
+}
+
+/* ---- Word list panel ---- */
+.word-list-panel {
+    background: var(--die);
+    border: 2px solid var(--die-border);
+    border-radius: 10px;
+    padding: clamp(12px, 1.6vmin, 20px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Sized to its content rather than a fixed width, so a short list
+       stays compact, while a long one is free to grow -- up to this cap --
+       across however many columns it needs. */
+    width: fit-content;
+    max-width: min(58vw, 1200px);
+    min-width: 0;
+}
+
+.word-list-panel .title {
+    color: var(--bar);
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    font-size: clamp(13px, 1.8vmin, 17px);
+    text-align: center;
+}
+
+/* One column per word length, each a flex item in a wrapping row --
+   flexbox lines up every header in a row on the same top edge for free,
+   and if the row runs out of width, the next line of columns gets the
+   same treatment automatically. */
+.word-columns {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    column-gap: clamp(18px, 2vw, 30px);
+    row-gap: clamp(14px, 1.8vmin, 24px);
+}
+
+.word-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 70px;
+}
+
+.word-column-header {
+    color: var(--bar);
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 0.04em;
+    font-size: clamp(11px, 1.5vmin, 14px);
+    border-bottom: 1px solid var(--die-border);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.word-list {
+    list-style: none;
+}
+
+.word-list li {
+    color: var(--ink);
+    font-size: clamp(12px, 1.5vmin, 15px);
+    letter-spacing: 0.04em;
+    margin-bottom: 3px;
+}
+
+.word-list li.found {
+    color: var(--accent);
+    font-weight: bold;
+}
+
+/* A length with a lot of words (usually 3s and 4s) would otherwise run
+   taller than the board -- once a list's natural height passes the
+   budget, it switches to this side-by-side sub-column flow instead of
+   growing further down. Column count and the element's own width are both
+   computed and set explicitly in JS (see renderWordColumns in
+   boggle-shared.js) rather than left to column-width auto-count: a
+   multi-column element's *intrinsic* width isn't reliably computed by
+   browsers when it's sizing a shrink-to-fit flex item (it collapses to
+   one column's width, clipping the rest), so the width needs to be handed
+   to it directly. */
+.word-list.multi-col {
+    column-gap: 14px;
+    column-fill: auto;
+}
+
+.word-list.multi-col li {
+    break-inside: avoid-column;
+}

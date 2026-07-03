@@ -7,48 +7,9 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="boggle-shared.css">
     <title>Boggle</title>
     <style>
-        button.option {
-            font-weight: normal;
-            letter-spacing: 0.03em;
-        }
-
-        button.option.active {
-            background: var(--die-kept);
-            color: var(--accent);
-            font-weight: bold;
-        }
-
-        .setup-row {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .setup-row .label {
-            color: var(--ink);
-            font-weight: bold;
-            letter-spacing: 0.05em;
-            font-size: clamp(13px, 1.8vmin, 17px);
-        }
-
-        .option-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .dictionary-status {
-            color: var(--ink);
-            font-size: clamp(12px, 1.5vmin, 15px);
-            opacity: 0.85;
-            text-align: center;
-        }
-
         /* ---- HUD ---- */
         .hud {
             display: flex;
@@ -91,8 +52,6 @@
 
         /* ---- Grid ---- */
         .grid {
-            display: grid;
-            gap: clamp(6px, 1.1vmin, 14px);
             width: min(80vw, 60vh);
             touch-action: none;
         }
@@ -105,15 +64,6 @@
         }
 
         .die {
-            aspect-ratio: 1 / 1;
-            background: var(--die);
-            border: 2px solid var(--die-border);
-            border-radius: clamp(5px, 0.9vmin, 12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 2px 4px 10px var(--die-shadow);
-            position: relative;
             cursor: pointer;
             user-select: none;
         }
@@ -129,10 +79,6 @@
 
         .letter {
             font-size: clamp(24px, 6vmin, 72px);
-            font-weight: bold;
-            color: var(--ink);
-            line-height: 1;
-            user-select: none;
         }
 
         .die.selected .letter {
@@ -143,13 +89,6 @@
             font-size: clamp(21px, 5.3vmin, 63px);
         }
 
-        /* "Qu" is the only letter with a descender (the tail on the Q), so
-           unlike the other glyphs its ink sits visibly lower than its line
-           box's baseline-centered position -- nudge it back up to match. */
-        .letter.descender {
-            transform: translateY(-0.07em);
-        }
-
         .order-badge {
             position: absolute;
             top: clamp(3px, 0.8vmin, 8px);
@@ -158,6 +97,41 @@
             font-weight: bold;
             color: var(--accent);
             line-height: 1;
+        }
+
+        /* Before the game ends, keep the grid fixed at true center and let
+           the found-words panel occupy space to its right without
+           shifting it -- unlike the post-game reveal (.board-area rules
+           in boggle-shared.css), which centers the whole shrunk block
+           together once the board-area switches to #game.with-list. The
+           symmetric side columns are what keep the (auto-width) middle
+           column centered regardless of the panel's width. Static has no
+           "words found while playing" state, so it never needs this. */
+        @media (min-width: 900px) {
+            #game:not(.with-list) #board-area {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+                align-items: start;
+            }
+
+            #game:not(.with-list) #board-area .grid {
+                grid-column: 2;
+            }
+
+            #game:not(.with-list) #board-area .word-list-panel {
+                grid-column: 3;
+                justify-self: start;
+                max-width: min(28vw, 320px);
+            }
+        }
+
+        /* The found-words list during play is open-ended (a full game can
+           turn up a lot of words) and, unlike the post-game reveal, isn't
+           sized to avoid ever scrolling -- so it gets its own scrollbox
+           instead of growing the panel indefinitely. */
+        #found-list {
+            max-height: min(55vh, 480px);
+            overflow-y: auto;
         }
 
         /* ---- Current word / controls ---- */
@@ -178,115 +152,14 @@
             text-align: center;
         }
 
-        .status-line {
-            min-height: 1.2em;
-            font-size: clamp(12px, 1.6vmin, 16px);
-            color: var(--ink);
-            text-align: center;
-        }
-
         .status-line.success {
             color: var(--accent);
             font-weight: bold;
         }
-
-        /* ---- Word lists ---- */
-        .lists-wrap {
-            display: flex;
-            flex-wrap: wrap;
-            gap: clamp(12px, 2vmin, 24px);
-            justify-content: center;
-            width: min(94vw, 900px);
-        }
-
-        .word-list-panel {
-            background: var(--die);
-            border: 2px solid var(--die-border);
-            border-radius: 10px;
-            padding: clamp(12px, 1.6vmin, 20px);
-            width: min(94vw, 340px);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .word-list-panel .title {
-            color: var(--bar);
-            font-weight: bold;
-            letter-spacing: 0.06em;
-            font-size: clamp(13px, 1.8vmin, 17px);
-            text-align: center;
-        }
-
-        .word-list {
-            list-style: none;
-            overflow-y: auto;
-            max-height: 40vh;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .word-list li {
-            color: var(--ink);
-            font-size: clamp(12px, 1.6vmin, 15px);
-            letter-spacing: 0.04em;
-            padding: 2px 4px;
-        }
-
-        .word-list li.found {
-            color: var(--accent);
-            font-weight: bold;
-        }
-
-        .word-list-panel.wide {
-            width: min(94vw, 720px);
-        }
-
-        /* At game end, let the all-words panel grow to its full height and
-           rely on normal page scrolling instead of a cramped inner
-           scrollbox -- otherwise the list is stuck tiny and every bit of
-           scrolling has to happen inside a small nested box. */
-        .word-list-panel.expanded .word-columns {
-            max-height: none;
-            overflow-y: visible;
-        }
-
-        .word-list-panel.expanded .word-columns .word-list {
-            max-height: none;
-            overflow-y: visible;
-        }
-
-        .word-columns {
-            display: flex;
-            flex-wrap: wrap;
-            gap: clamp(10px, 1.8vmin, 22px);
-            justify-content: center;
-            max-height: 50vh;
-            overflow-y: auto;
-        }
-
-        .word-column {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            min-width: 90px;
-        }
-
-        .word-column-header {
-            color: var(--bar);
-            font-weight: bold;
-            text-align: center;
-            letter-spacing: 0.04em;
-            font-size: clamp(11px, 1.5vmin, 14px);
-            border-bottom: 1px solid var(--die-border);
-            padding-bottom: 4px;
-            margin-bottom: 2px;
-        }
     </style>
 </head>
 
-<body class="scrollable">
+<body>
 
     <div class="button-bar">
         <div class="left">
@@ -337,7 +210,14 @@
             </div>
         </div>
 
-        <div class="grid" id="grid"></div>
+        <div class="board-area" id="board-area">
+            <div class="grid" id="grid"></div>
+            <div class="word-list-panel" id="word-list-panel">
+                <div class="title" id="word-list-title">Words Found</div>
+                <ul class="word-list" id="found-list"></ul>
+                <div class="word-columns hidden" id="word-columns"></div>
+            </div>
+        </div>
 
         <div class="word-panel">
             <div class="current-word" id="current-word">&nbsp;</div>
@@ -347,71 +227,11 @@
                 <button id="clear-btn">Clear</button>
             </div>
         </div>
-
-        <div class="lists-wrap">
-            <div class="word-list-panel" id="word-list-panel">
-                <div class="title" id="word-list-title">Words Found</div>
-                <ul class="word-list" id="found-list"></ul>
-                <div class="word-columns hidden" id="word-columns"></div>
-            </div>
-        </div>
     </div>
 
     <script src="words.js"></script>
+    <script src="boggle-shared.js"></script>
     <script>
-        // Standard 4x4 Boggle -- 16 dice (New Boggle set, post-1990)
-        const DICE_4 = [
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['E', 'L', 'R', 'T', 'T', 'Y'],
-            ['A', 'O', 'O', 'T', 'T', 'W'],
-            ['A', 'B', 'B', 'J', 'O', 'O'],
-            ['E', 'H', 'R', 'T', 'V', 'W'],
-            ['C', 'I', 'M', 'O', 'T', 'U'],
-            ['D', 'I', 'S', 'T', 'T', 'Y'],
-            ['E', 'I', 'O', 'S', 'S', 'T'],
-            ['D', 'E', 'L', 'R', 'V', 'Y'],
-            ['A', 'C', 'H', 'O', 'P', 'S'],
-            ['H', 'I', 'M', 'N', 'Qu', 'U'],
-            ['E', 'E', 'F', 'H', 'I', 'Y'],
-            ['E', 'E', 'G', 'H', 'N', 'W'],
-            ['A', 'F', 'F', 'K', 'P', 'S'],
-            ['H', 'L', 'N', 'N', 'R', 'Z'],
-            ['D', 'E', 'I', 'L', 'R', 'X'],
-        ];
-
-        // Big Boggle 5x5 -- 25 dice
-        const DICE_5 = [
-            ['A', 'A', 'A', 'F', 'R', 'S'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'F', 'I', 'R', 'S'],
-            ['A', 'D', 'E', 'N', 'N', 'N'],
-            ['A', 'E', 'E', 'E', 'E', 'M'],
-            ['A', 'E', 'G', 'M', 'U', 'U'],
-            ['A', 'E', 'G', 'M', 'N', 'N'],
-            ['A', 'F', 'I', 'R', 'S', 'Y'],
-            ['B', 'J', 'K', 'Qu', 'X', 'Z'],
-            ['C', 'C', 'N', 'S', 'T', 'W'],
-            ['C', 'E', 'I', 'I', 'L', 'T'],
-            ['C', 'E', 'I', 'L', 'P', 'T'],
-            ['D', 'D', 'H', 'N', 'O', 'T'],
-            ['D', 'H', 'H', 'L', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['E', 'E', 'I', 'I', 'I', 'T'],
-            ['E', 'N', 'S', 'S', 'S', 'U'],
-            ['E', 'E', 'T', 'T', 'I', 'I'],
-            ['F', 'I', 'P', 'R', 'S', 'Y'],
-            ['G', 'O', 'R', 'R', 'V', 'W'],
-            ['H', 'I', 'P', 'R', 'R', 'Y'],
-            ['N', 'O', 'O', 'T', 'U', 'W'],
-            ['O', 'O', 'O', 'T', 'T', 'U'],
-        ];
-
-        const WIDE = new Set(['W', 'M', 'Qu']);
-        const DESCENDER = new Set(['Qu']);
-        const MIN_WORD_LENGTH = 3;
-
         // Traditional Boggle scoring.
         function pointsForLength(len) {
             if (len < MIN_WORD_LENGTH) return 0;
@@ -420,34 +240,6 @@
             if (len === 6) return 3;
             if (len === 7) return 5;
             return 11;
-        }
-
-        function shuffle(arr) {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
-            }
-            return a;
-        }
-
-        // ================= Dictionary =================
-
-        let WORD_SET = null;
-        let TRIE = null;
-
-        function buildDictionary() {
-            WORD_SET = new Set(WORD_LIST);
-            const root = {};
-            for (const w of WORD_LIST) {
-                let node = root;
-                for (let i = 0; i < w.length; i++) {
-                    const ch = w[i];
-                    node = node[ch] || (node[ch] = {});
-                }
-                node.$ = true;
-            }
-            TRIE = root;
         }
 
         // ================= DOM refs =================
@@ -472,7 +264,6 @@
         const wordControlsEl = document.getElementById('word-controls');
         const submitBtn = document.getElementById('submit-btn');
         const clearBtn = document.getElementById('clear-btn');
-        const wordListPanelEl = document.getElementById('word-list-panel');
         const wordListTitleEl = document.getElementById('word-list-title');
         const foundListEl = document.getElementById('found-list');
         const wordColumnsEl = document.getElementById('word-columns');
@@ -512,6 +303,8 @@
         let ROWS = 4;
         let board = [];
         let neighborsOf = [];
+        let WORD_SET = null;
+        let TRIE = null;
         let path = [];
         let foundWords = [];
         let score = 0;
@@ -520,55 +313,21 @@
         let gameActive = false;
 
         function buildBoard(size) {
-            COLS = size;
-            ROWS = size;
-            const DICE = size === 5 ? DICE_5 : DICE_4;
-            const shuffledDice = shuffle(DICE);
-            board = shuffledDice.map((faces, i) => {
-                const face = faces[Math.floor(Math.random() * faces.length)];
-                return {
-                    index: i,
-                    row: Math.floor(i / COLS),
-                    col: i % COLS,
-                    display: face,
-                    match: face.toLowerCase(),
-                };
-            });
-            neighborsOf = board.map(cell => {
-                const result = [];
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
-                        if (dr === 0 && dc === 0) continue;
-                        const r = cell.row + dr;
-                        const c = cell.col + dc;
-                        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-                            result.push(r * COLS + c);
-                        }
-                    }
-                }
-                return result;
-            });
+            const result = buildBoardCells(size);
+            board = result.board;
+            neighborsOf = result.neighborsOf;
+            COLS = result.cols;
+            ROWS = result.rows;
         }
 
         function renderGrid() {
             gridEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
             gridEl.innerHTML = '';
             board.forEach(cell => {
-                const dieEl = document.createElement('div');
-                dieEl.className = 'die';
-                dieEl.dataset.index = cell.index;
-
-                const span = document.createElement('span');
-                span.className = 'letter'
-                    + (WIDE.has(cell.display) ? ' wide' : '')
-                    + (DESCENDER.has(cell.display) ? ' descender' : '');
-                span.textContent = cell.display;
-                dieEl.appendChild(span);
-
+                const dieEl = createDieElement(cell);
                 const badge = document.createElement('span');
                 badge.className = 'order-badge';
                 dieEl.appendChild(badge);
-
                 gridEl.appendChild(dieEl);
             });
         }
@@ -614,7 +373,7 @@
         function onPathChanged() {
             renderPathHighlight();
             const word = currentWord();
-            currentWordEl.textContent = word ? word.toUpperCase() : ' ';
+            currentWordEl.textContent = word ? word.toUpperCase() : ' ';
             updateValidityHighlight(word);
             if (word.length === 0) {
                 showStatus('Drag or tap adjacent letters to build a word.', 'info');
@@ -839,10 +598,6 @@
             foundCountValueEl.textContent = foundWords.length;
         }
 
-        function sortWords(words) {
-            return [...words].sort((a, b) => a.length - b.length || a.localeCompare(b));
-        }
-
         function renderFoundWords() {
             const sorted = sortWords(foundWords.map(f => f.word))
                 .map(word => foundWords.find(f => f.word === word));
@@ -852,44 +607,6 @@
                 li.textContent = f.word.toUpperCase() + ' (' + f.points + ')';
                 foundListEl.appendChild(li);
             });
-        }
-
-        // Renders every word the board contains, grouped into columns by
-        // length, in the same panel the found-words list occupies during
-        // play. Words the player already found are bolded/accented.
-        function renderWordColumns(allWordsSet) {
-            const allWords = sortWords([...allWordsSet]);
-            const foundSet = new Set(foundWords.map(f => f.word));
-            const byLength = new Map();
-            allWords.forEach(w => {
-                if (!byLength.has(w.length)) byLength.set(w.length, []);
-                byLength.get(w.length).push(w);
-            });
-
-            wordColumnsEl.innerHTML = '';
-            [...byLength.keys()].sort((a, b) => a - b).forEach(len => {
-                const col = document.createElement('div');
-                col.className = 'word-column';
-
-                const header = document.createElement('div');
-                header.className = 'word-column-header';
-                header.textContent = len + ' letters';
-                col.appendChild(header);
-
-                const ul = document.createElement('ul');
-                ul.className = 'word-list';
-                byLength.get(len).forEach(w => {
-                    const li = document.createElement('li');
-                    li.textContent = w.toUpperCase() + ' (' + pointsForLength(w.length) + ')';
-                    if (foundSet.has(w)) li.classList.add('found');
-                    ul.appendChild(li);
-                });
-                col.appendChild(ul);
-
-                wordColumnsEl.appendChild(col);
-            });
-
-            return allWords.length;
         }
 
         // ================= Timer =================
@@ -914,32 +631,6 @@
             timerValueEl.classList.toggle('low', timeLeftSec <= 30);
         }
 
-        // ================= Board solver =================
-
-        function solveBoard() {
-            const found = new Set();
-            const visited = new Array(board.length).fill(false);
-
-            function dfs(index, node, wordSoFar) {
-                const cell = board[index];
-                let curNode = node;
-                for (const ch of cell.match) {
-                    curNode = curNode[ch];
-                    if (!curNode) return;
-                }
-                const newWord = wordSoFar + cell.match;
-                if (curNode.$ && newWord.length >= MIN_WORD_LENGTH) found.add(newWord);
-                visited[index] = true;
-                for (const n of neighborsOf[index]) {
-                    if (!visited[n]) dfs(n, curNode, newWord);
-                }
-                visited[index] = false;
-            }
-
-            for (let i = 0; i < board.length; i++) dfs(i, TRIE, '');
-            return found;
-        }
-
         // ================= Game flow =================
 
         // Resets the in-game panels back to "playing" mode: the current-word
@@ -949,12 +640,12 @@
             currentWordEl.classList.remove('hidden');
             wordControlsEl.classList.remove('hidden');
             wordListTitleEl.textContent = 'Words Found';
-            wordListPanelEl.classList.remove('wide');
-            wordListPanelEl.classList.remove('expanded');
             foundListEl.classList.remove('hidden');
             wordColumnsEl.classList.add('hidden');
             wordColumnsEl.innerHTML = '';
             gridEl.classList.remove('inactive');
+            gameEl.classList.remove('with-list');
+            document.body.style.overflowY = '';
         }
 
         function startGame() {
@@ -964,7 +655,7 @@
             buildBoard(boardSize);
             renderGrid();
             renderPathHighlight();
-            currentWordEl.textContent = ' ';
+            currentWordEl.textContent = ' ';
             resetPanelsForPlay();
             showStatus('Drag or tap adjacent letters to build a word.', 'info');
             renderFoundWords();
@@ -992,23 +683,26 @@
             currentWordEl.classList.add('hidden');
             wordControlsEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
-            showStatus('Solving board…', 'info');
+            statusLineEl.innerHTML = '&nbsp;';
 
             setTimeout(() => {
-                const allWordsSet = solveBoard();
-                const totalCount = renderWordColumns(allWordsSet);
-
-                wordListTitleEl.textContent = 'All Possible Words';
-                wordListPanelEl.classList.add('wide');
-                wordListPanelEl.classList.add('expanded');
-                foundListEl.classList.add('hidden');
+                // Unhidden (and the board shrunk over) before rendering so
+                // renderWordColumns() can measure real, laid-out heights
+                // when deciding which lengths need sub-columns.
                 wordColumnsEl.classList.remove('hidden');
+                foundListEl.classList.add('hidden');
+                gameEl.classList.add('with-list');
 
+                const allWordsSet = solveBoard(board, neighborsOf, TRIE);
+                const foundSet = new Set(foundWords.map(f => f.word));
+                const totalCount = renderWordColumns(wordColumnsEl, allWordsSet, {
+                    formatWord: w => w.toUpperCase() + ' (' + pointsForLength(w.length) + ')',
+                    foundSet,
+                });
+
+                wordListTitleEl.textContent = 'All Possible Words (' + totalCount + ')';
                 foundCountValueEl.textContent = foundWords.length + ' / ' + totalCount;
-                showStatus(
-                    'Game over — Score ' + score + ' — found ' + foundWords.length + ' of ' + totalCount + ' possible words.',
-                    'success'
-                );
+                allowScrollIfContentOverflows();
             }, 20);
         }
 
@@ -1043,7 +737,9 @@
         // Build the dictionary after the setup screen has painted so the
         // "Loading dictionary…" message is visible during the (brief) delay.
         setTimeout(() => {
-            buildDictionary();
+            const dict = buildDictionary();
+            WORD_SET = dict.wordSet;
+            TRIE = dict.trie;
             dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
             startBtn.disabled = false;
         }, 20);

@@ -7,48 +7,9 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="boggle-shared.css">
     <title>Boggle</title>
     <style>
-        button.option {
-            font-weight: normal;
-            letter-spacing: 0.03em;
-        }
-
-        button.option.active {
-            background: var(--die-kept);
-            color: var(--accent);
-            font-weight: bold;
-        }
-
-        .setup-row {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .setup-row .label {
-            color: var(--ink);
-            font-weight: bold;
-            letter-spacing: 0.05em;
-            font-size: clamp(13px, 1.8vmin, 17px);
-        }
-
-        .option-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .dictionary-status {
-            color: var(--ink);
-            font-size: clamp(12px, 1.5vmin, 15px);
-            opacity: 0.85;
-            text-align: center;
-        }
-
         /* ---- Game screen ---- */
         #game {
             display: flex;
@@ -80,166 +41,17 @@
             background: var(--warn);
         }
 
-        /* ---- Board area ---- */
-        .board-area {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            justify-content: center;
-            gap: clamp(16px, 3vmin, 40px);
-            width: 100%;
-        }
-
         /* ---- Grid ---- */
         .grid {
-            display: grid;
-            gap: clamp(6px, 1.1vmin, 14px);
             width: min(80vw, 64vh);
-        }
-
-        /* Once the word list is showing alongside the board, shrink the
-           board so both sit side by side on one screen instead of the list
-           wrapping below and needing the page to grow taller. The word list
-           height budget (set in JS, see WORD_LIST_BUDGET) matches this. */
-        #game.with-list .grid {
-            width: min(38vw, 48vh);
-        }
-
-        /* Slow, low-motion dim once time is up -- deliberately overrides the
-           site-wide "no transitions" reset (see shared.css) since a gentle
-           fade is the whole point here, not something to suppress. Stays
-           partial (never full black) and slow for photosensitivity/motion
-           comfort. The width transition (for the later move-left-to-reveal
-           step) lives on this same rule so there's only ever one place
-           declaring `transition` for the grid -- letting both properties
-           coexist without a specificity fight. */
-        .grid.time-up {
-            opacity: 0.35;
-            transition: opacity 3s ease-in-out, width 0.8s ease !important;
-        }
-
-        .die {
-            aspect-ratio: 1 / 1;
-            background: var(--die);
-            border: 2px solid var(--die-border);
-            border-radius: clamp(5px, 0.9vmin, 12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 2px 4px 10px var(--die-shadow);
-            position: relative;
         }
 
         .letter {
             font-size: clamp(24px, 7vmin, 84px);
-            font-weight: bold;
-            color: var(--ink);
-            line-height: 1;
-            user-select: none;
         }
 
         .letter.wide {
             font-size: clamp(21px, 6.2vmin, 74px);
-        }
-
-        /* "Qu" is the only letter with a descender (the tail on the Q), so
-           unlike the other glyphs its ink sits visibly lower than its line
-           box's baseline-centered position -- nudge it back up to match. */
-        .letter.descender {
-            transform: translateY(-0.07em);
-        }
-
-        /* ---- Word list (shown once the game ends) ---- */
-        .word-list-panel {
-            background: var(--die);
-            border: 2px solid var(--die-border);
-            border-radius: 10px;
-            padding: clamp(12px, 1.6vmin, 20px);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            /* Sized to its content (the multi-column word list) rather than
-               a fixed width, so a short list stays compact and centered
-               next to the board, while a long one is free to grow -- up to
-               this cap -- across however many columns it needs. */
-            width: fit-content;
-            max-width: min(58vw, 1200px);
-            min-width: 0;
-        }
-
-        .word-list-panel .title {
-            color: var(--bar);
-            font-weight: bold;
-            letter-spacing: 0.06em;
-            font-size: clamp(13px, 1.8vmin, 17px);
-            text-align: center;
-        }
-
-        /* One column per word length, each a flex item in a wrapping row --
-           flexbox lines up every header in a row on the same top edge for
-           free, and if the row runs out of width, the next line of columns
-           gets the same treatment automatically. */
-        .word-columns {
-            display: flex;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            column-gap: clamp(18px, 2vw, 30px);
-            row-gap: clamp(14px, 1.8vmin, 24px);
-        }
-
-        .word-column {
-            display: flex;
-            flex-direction: column;
-            min-width: 70px;
-        }
-
-        .word-column-header {
-            color: var(--bar);
-            font-weight: bold;
-            text-align: center;
-            letter-spacing: 0.04em;
-            font-size: clamp(11px, 1.5vmin, 14px);
-            border-bottom: 1px solid var(--die-border);
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-        }
-
-        .word-list {
-            list-style: none;
-        }
-
-        .word-list li {
-            color: var(--ink);
-            font-size: clamp(12px, 1.5vmin, 15px);
-            letter-spacing: 0.04em;
-            margin-bottom: 3px;
-        }
-
-        /* A length with a lot of words (usually 3s and 4s) would otherwise
-           run taller than the board -- once a list's natural height passes
-           the budget, it switches to this side-by-side sub-column flow
-           instead of growing further down. Column count and the element's
-           own width are both computed and set explicitly in JS (see
-           renderWordColumns) rather than left to column-width auto-count:
-           a multi-column element's *intrinsic* width isn't reliably
-           computed by browsers when it's sizing a shrink-to-fit flex item
-           (it collapses to one column's width, clipping the rest), so the
-           width needs to be handed to it directly. */
-        .word-list.multi-col {
-            column-gap: 14px;
-            column-fill: auto;
-        }
-
-        .word-list.multi-col li {
-            break-inside: avoid-column;
-        }
-
-        .status-line {
-            min-height: 1.2em;
-            font-size: clamp(12px, 1.6vmin, 16px);
-            color: var(--ink);
-            text-align: center;
         }
     </style>
 </head>
@@ -252,7 +64,6 @@
         </div>
         <div class="right">
             <button id="end-game-btn" class="hidden">End Game</button>
-            <button id="show-words-btn" class="hidden">Show All Words</button>
             <button id="new-game-btn" class="hidden">New Game</button>
         </div>
     </div>
@@ -305,88 +116,8 @@
     </div>
 
     <script src="words.js"></script>
+    <script src="boggle-shared.js"></script>
     <script>
-        // Standard 4x4 Boggle -- 16 dice (New Boggle set, post-1990)
-        const DICE_4 = [
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['E', 'L', 'R', 'T', 'T', 'Y'],
-            ['A', 'O', 'O', 'T', 'T', 'W'],
-            ['A', 'B', 'B', 'J', 'O', 'O'],
-            ['E', 'H', 'R', 'T', 'V', 'W'],
-            ['C', 'I', 'M', 'O', 'T', 'U'],
-            ['D', 'I', 'S', 'T', 'T', 'Y'],
-            ['E', 'I', 'O', 'S', 'S', 'T'],
-            ['D', 'E', 'L', 'R', 'V', 'Y'],
-            ['A', 'C', 'H', 'O', 'P', 'S'],
-            ['H', 'I', 'M', 'N', 'Qu', 'U'],
-            ['E', 'E', 'F', 'H', 'I', 'Y'],
-            ['E', 'E', 'G', 'H', 'N', 'W'],
-            ['A', 'F', 'F', 'K', 'P', 'S'],
-            ['H', 'L', 'N', 'N', 'R', 'Z'],
-            ['D', 'E', 'I', 'L', 'R', 'X'],
-        ];
-
-        // Big Boggle 5x5 -- 25 dice
-        const DICE_5 = [
-            ['A', 'A', 'A', 'F', 'R', 'S'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'E', 'E', 'G', 'N'],
-            ['A', 'A', 'F', 'I', 'R', 'S'],
-            ['A', 'D', 'E', 'N', 'N', 'N'],
-            ['A', 'E', 'E', 'E', 'E', 'M'],
-            ['A', 'E', 'G', 'M', 'U', 'U'],
-            ['A', 'E', 'G', 'M', 'N', 'N'],
-            ['A', 'F', 'I', 'R', 'S', 'Y'],
-            ['B', 'J', 'K', 'Qu', 'X', 'Z'],
-            ['C', 'C', 'N', 'S', 'T', 'W'],
-            ['C', 'E', 'I', 'I', 'L', 'T'],
-            ['C', 'E', 'I', 'L', 'P', 'T'],
-            ['D', 'D', 'H', 'N', 'O', 'T'],
-            ['D', 'H', 'H', 'L', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['D', 'H', 'L', 'N', 'O', 'R'],
-            ['E', 'E', 'I', 'I', 'I', 'T'],
-            ['E', 'N', 'S', 'S', 'S', 'U'],
-            ['E', 'E', 'T', 'T', 'I', 'I'],
-            ['F', 'I', 'P', 'R', 'S', 'Y'],
-            ['G', 'O', 'R', 'R', 'V', 'W'],
-            ['H', 'I', 'P', 'R', 'R', 'Y'],
-            ['N', 'O', 'O', 'T', 'U', 'W'],
-            ['O', 'O', 'O', 'T', 'T', 'U'],
-        ];
-
-        const WIDE = new Set(['W', 'M', 'Qu']);
-        const DESCENDER = new Set(['Qu']);
-        const MIN_WORD_LENGTH = 3;
-
-        function shuffle(arr) {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
-            }
-            return a;
-        }
-
-        // ================= Dictionary =================
-
-        let WORD_SET = null;
-        let TRIE = null;
-
-        function buildDictionary() {
-            WORD_SET = new Set(WORD_LIST);
-            const root = {};
-            for (const w of WORD_LIST) {
-                let node = root;
-                for (let i = 0; i < w.length; i++) {
-                    const ch = w[i];
-                    node = node[ch] || (node[ch] = {});
-                }
-                node.$ = true;
-            }
-            TRIE = root;
-        }
-
         // ================= DOM refs =================
 
         const setupEl = document.getElementById('setup');
@@ -399,11 +130,9 @@
         const dictionaryStatusEl = document.getElementById('dictionary-status');
 
         const endGameBtn = document.getElementById('end-game-btn');
-        const showWordsBtn = document.getElementById('show-words-btn');
         const newGameBtn = document.getElementById('new-game-btn');
 
         const gridEl = document.getElementById('grid');
-        const boardAreaEl = document.getElementById('board-area');
         const timerBarWrapEl = document.getElementById('timer-bar-wrap');
         const timerBarFillEl = document.getElementById('timer-bar-fill');
         const wordListPanelEl = document.getElementById('word-list-panel');
@@ -455,154 +184,26 @@
         let ROWS = 4;
         let board = [];
         let neighborsOf = [];
+        let TRIE = null;
         let timerInterval = null;
         let timeLeftSec = 0;
         let totalTimeSec = 0;
         let gameActive = false;
 
         function buildBoard(size) {
-            COLS = size;
-            ROWS = size;
-            const DICE = size === 5 ? DICE_5 : DICE_4;
-            const shuffledDice = shuffle(DICE);
-            board = shuffledDice.map((faces, i) => {
-                const face = faces[Math.floor(Math.random() * faces.length)];
-                return {
-                    index: i,
-                    row: Math.floor(i / COLS),
-                    col: i % COLS,
-                    display: face,
-                    match: face.toLowerCase(),
-                };
-            });
-            neighborsOf = board.map(cell => {
-                const result = [];
-                for (let dr = -1; dr <= 1; dr++) {
-                    for (let dc = -1; dc <= 1; dc++) {
-                        if (dr === 0 && dc === 0) continue;
-                        const r = cell.row + dr;
-                        const c = cell.col + dc;
-                        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-                            result.push(r * COLS + c);
-                        }
-                    }
-                }
-                return result;
-            });
+            const result = buildBoardCells(size);
+            board = result.board;
+            neighborsOf = result.neighborsOf;
+            COLS = result.cols;
+            ROWS = result.rows;
         }
 
         function renderGrid() {
             gridEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
             gridEl.innerHTML = '';
             board.forEach(cell => {
-                const dieEl = document.createElement('div');
-                dieEl.className = 'die';
-
-                const span = document.createElement('span');
-                span.className = 'letter'
-                    + (WIDE.has(cell.display) ? ' wide' : '')
-                    + (DESCENDER.has(cell.display) ? ' descender' : '');
-                span.textContent = cell.display;
-                dieEl.appendChild(span);
-
-                gridEl.appendChild(dieEl);
+                gridEl.appendChild(createDieElement(cell));
             });
-        }
-
-        // ================= Board solver =================
-
-        function solveBoard() {
-            const found = new Set();
-            const visited = new Array(board.length).fill(false);
-
-            function dfs(index, node, wordSoFar) {
-                const cell = board[index];
-                let curNode = node;
-                for (const ch of cell.match) {
-                    curNode = curNode[ch];
-                    if (!curNode) return;
-                }
-                const newWord = wordSoFar + cell.match;
-                if (curNode.$ && newWord.length >= MIN_WORD_LENGTH) found.add(newWord);
-                visited[index] = true;
-                for (const n of neighborsOf[index]) {
-                    if (!visited[n]) dfs(n, curNode, newWord);
-                }
-                visited[index] = false;
-            }
-
-            for (let i = 0; i < board.length; i++) dfs(i, TRIE, '');
-            return found;
-        }
-
-        function sortWords(words) {
-            return [...words].sort((a, b) => a.length - b.length || a.localeCompare(b));
-        }
-
-        // How tall a single length's word list is allowed to grow before it
-        // switches to side-by-side sub-columns instead -- matches the
-        // board's own height so the two stay visually balanced. Call only
-        // once the word list panel is unhidden (needs real layout to
-        // measure against).
-        function wordListHeightBudget() {
-            return Math.min(0.38 * window.innerWidth, 0.48 * window.innerHeight);
-        }
-
-        const SUB_COLUMN_WIDTH = 66;
-        const SUB_COLUMN_GAP = 14;
-
-        // Renders every word the board contains, one column per length,
-        // with each column's header held to a shared top row via flex-wrap
-        // (see .word-columns). There's no "found" tracking here -- this
-        // version is meant to be cast to a TV for a group playing on paper,
-        // so the reveal is just the answer key, not a scored list.
-        function renderWordColumns(allWordsSet) {
-            const allWords = sortWords([...allWordsSet]);
-            const byLength = new Map();
-            allWords.forEach(w => {
-                if (!byLength.has(w.length)) byLength.set(w.length, []);
-                byLength.get(w.length).push(w);
-            });
-
-            wordColumnsEl.innerHTML = '';
-            const budget = wordListHeightBudget();
-
-            [...byLength.keys()].sort((a, b) => a - b).forEach(len => {
-                const col = document.createElement('div');
-                col.className = 'word-column';
-
-                const header = document.createElement('div');
-                header.className = 'word-column-header';
-                header.textContent = len + ' letters';
-                col.appendChild(header);
-
-                const ul = document.createElement('ul');
-                ul.className = 'word-list';
-                byLength.get(len).forEach(w => {
-                    const li = document.createElement('li');
-                    li.textContent = w.toUpperCase();
-                    ul.appendChild(li);
-                });
-                col.appendChild(ul);
-                wordColumnsEl.appendChild(col);
-
-                // Measured after attaching, in its natural single-column
-                // height, so a short list never pays for space it doesn't
-                // need -- only a list taller than the budget switches to
-                // sub-columns. Column count is however many are needed to
-                // bring it back within the budget, and the element's width
-                // is set explicitly to match (see SUB_COLUMN_WIDTH note
-                // above the .word-list.multi-col rule).
-                if (ul.offsetHeight > budget) {
-                    const cols = Math.ceil(ul.offsetHeight / budget);
-                    ul.classList.add('multi-col');
-                    ul.style.height = budget + 'px';
-                    ul.style.columnCount = cols;
-                    ul.style.width = (cols * SUB_COLUMN_WIDTH + (cols - 1) * SUB_COLUMN_GAP) + 'px';
-                }
-            });
-
-            return allWords.length;
         }
 
         // ================= Timer =================
@@ -632,27 +233,19 @@
 
         // ================= Game flow =================
 
-        // Holds the solved word set between endGame() (board locks, dims)
-        // and revealWords() (board moves over, list appears) -- solving
-        // happens up front so the reveal itself is instant.
-        let pendingWords = null;
-
         function startGame() {
             buildBoard(boardSize);
             renderGrid();
-            gridEl.classList.remove('time-up');
             gameEl.classList.remove('with-list');
             wordListPanelEl.classList.add('hidden');
             wordListTitleEl.textContent = 'All Possible Words';
             wordColumnsEl.innerHTML = '';
-            pendingWords = null;
             document.body.style.overflowY = '';
             statusLineEl.innerHTML = '&nbsp;';
 
             setupEl.classList.add('hidden');
             gameEl.classList.remove('hidden');
             endGameBtn.classList.remove('hidden');
-            showWordsBtn.classList.add('hidden');
             newGameBtn.classList.add('hidden');
 
             gameActive = true;
@@ -669,47 +262,28 @@
             }
         }
 
-        // Time's up (or "End Game" was clicked): lock and dim the board and
-        // offer a "Show All Words" button, but don't move anything or
-        // reveal the list yet -- that's a deliberate second step so a host
-        // can leave the board dimmed while the group finishes writing.
+        // Time's up (or "End Game" was clicked, which is the only way an
+        // untimed game ends): lock the board, slide it over, and reveal
+        // every possible word immediately -- no extra step in between.
         function endGame() {
             if (!gameActive) return;
             gameActive = false;
             clearInterval(timerInterval);
-            gridEl.classList.add('time-up');
             endGameBtn.classList.add('hidden');
-            showWordsBtn.classList.remove('hidden');
-            statusLineEl.textContent = 'Time’s up — click "Show All Words" when ready.';
-
-            pendingWords = solveBoard();
-        }
-
-        function revealWords() {
-            if (!pendingWords) return;
-
-            // Board shrinks and the list panel is unhidden first so
-            // renderWordColumns() can measure real, laid-out heights when
-            // deciding which lengths need sub-columns.
-            gameEl.classList.add('with-list');
             timerBarWrapEl.classList.add('hidden');
+
+            // Unhidden before rendering so renderWordColumns() can measure
+            // real, laid-out heights when deciding which lengths need
+            // sub-columns.
+            gameEl.classList.add('with-list');
             wordListPanelEl.classList.remove('hidden');
 
-            const totalCount = renderWordColumns(pendingWords);
+            const allWordsSet = solveBoard(board, neighborsOf, TRIE);
+            const totalCount = renderWordColumns(wordColumnsEl, allWordsSet);
 
-            // The layout above is sized so this shouldn't normally happen,
-            // but an unusually word-rich board can still need more rows of
-            // columns than the screen has room for. The page is
-            // non-scrolling by default (see shared.css), which would
-            // otherwise silently clip words off the bottom -- so as a
-            // fallback, allow scrolling rather than ever hiding an answer.
-            document.body.style.overflowY =
-                document.documentElement.scrollHeight > window.innerHeight ? 'auto' : '';
-
-            showWordsBtn.classList.add('hidden');
-            newGameBtn.classList.remove('hidden');
             wordListTitleEl.textContent = 'All Possible Words (' + totalCount + ')';
-            statusLineEl.innerHTML = '&nbsp;';
+            newGameBtn.classList.remove('hidden');
+            allowScrollIfContentOverflows();
         }
 
         function returnToSetup() {
@@ -717,20 +291,18 @@
             clearInterval(timerInterval);
             gameEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
-            showWordsBtn.classList.add('hidden');
             newGameBtn.classList.add('hidden');
             setupEl.classList.remove('hidden');
         }
 
         startBtn.addEventListener('click', startGame);
         endGameBtn.addEventListener('click', endGame);
-        showWordsBtn.addEventListener('click', revealWords);
         newGameBtn.addEventListener('click', returnToSetup);
 
         // Build the dictionary after the setup screen has painted so the
         // "Loading dictionary…" message is visible during the (brief) delay.
         setTimeout(() => {
-            buildDictionary();
+            TRIE = buildDictionary().trie;
             dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
             startBtn.disabled = false;
         }, 20);
