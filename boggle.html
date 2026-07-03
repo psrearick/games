@@ -140,22 +140,14 @@
         }
 
         .letter.wide {
-            font-size: clamp(18px, 4.4vmin, 54px);
+            font-size: clamp(21px, 5.3vmin, 63px);
         }
 
-        .underline-mark {
-            position: absolute;
-            bottom: clamp(6px, 1.6vmin, 18px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: clamp(10px, 4vmin, 22px);
-            height: 2px;
-            background: var(--ink);
-            border-radius: 1px;
-        }
-
-        .die.selected .underline-mark {
-            background: var(--accent);
+        /* "Qu" is the only letter with a descender (the tail on the Q), so
+           unlike the other glyphs its ink sits visibly lower than its line
+           box's baseline-centered position -- nudge it back up to match. */
+        .letter.descender {
+            transform: translateY(-0.07em);
         }
 
         .order-badge {
@@ -416,8 +408,8 @@
             ['O', 'O', 'O', 'T', 'T', 'U'],
         ];
 
-        const UNDERLINED = new Set(['N', 'Z']);
         const WIDE = new Set(['W', 'M', 'Qu']);
+        const DESCENDER = new Set(['Qu']);
         const MIN_WORD_LENGTH = 3;
 
         // Traditional Boggle scoring.
@@ -567,15 +559,11 @@
                 dieEl.dataset.index = cell.index;
 
                 const span = document.createElement('span');
-                span.className = 'letter' + (WIDE.has(cell.display) ? ' wide' : '');
+                span.className = 'letter'
+                    + (WIDE.has(cell.display) ? ' wide' : '')
+                    + (DESCENDER.has(cell.display) ? ' descender' : '');
                 span.textContent = cell.display;
                 dieEl.appendChild(span);
-
-                if (UNDERLINED.has(cell.display)) {
-                    const ul = document.createElement('div');
-                    ul.className = 'underline-mark';
-                    dieEl.appendChild(ul);
-                }
 
                 const badge = document.createElement('span');
                 badge.className = 'order-badge';
