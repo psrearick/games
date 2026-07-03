@@ -25,6 +25,14 @@
     transition: none !important;
 }
 
+html,
+body {
+    /* Stop horizontal drags near the edges from being interpreted as a
+       back/forward navigation swipe -- without this, an overshot drag
+       rubber-bands (a visible wiggle) or navigates away mid-game. */
+    overscroll-behavior-x: none;
+}
+
 body {
     background-color: var(--bg);
     min-height: 100vh;
