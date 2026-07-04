@@ -173,8 +173,8 @@ function wordListHeightBudget() {
     return Math.min(0.38 * window.innerWidth, 0.48 * window.innerHeight);
 }
 
-const SUB_COLUMN_WIDTH = 66;
-const SUB_COLUMN_GAP = 14;
+const SUB_COLUMN_WIDTH = 84;
+const SUB_COLUMN_GAP = 16;
 
 // Renders every word in allWordsSet into `container`, one column per
 // length, with each column's header held to a shared top row via

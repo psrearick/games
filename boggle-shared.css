@@ -116,9 +116,13 @@ button.option.active {
     gap: 8px;
     /* Sized to its content rather than a fixed width, so a short list
        stays compact, while a long one is free to grow -- up to this cap --
-       across however many columns it needs. */
+       across however many columns it needs. The cap is generous (rather
+       than keeping the grid+panel block small and centered with a lot of
+       empty margin on either side) since a bigger, more TV-readable word
+       list is worth the board and panel sitting closer to the screen
+       edges. */
     width: fit-content;
-    max-width: min(58vw, 1200px);
+    max-width: min(66vw, 1400px);
     min-width: 0;
 }
 
@@ -126,7 +130,7 @@ button.option.active {
     color: var(--bar);
     font-weight: bold;
     letter-spacing: 0.06em;
-    font-size: clamp(13px, 1.8vmin, 17px);
+    font-size: clamp(15px, 2.2vmin, 20px);
     text-align: center;
 }
 
@@ -145,7 +149,7 @@ button.option.active {
 .word-column {
     display: flex;
     flex-direction: column;
-    min-width: 70px;
+    min-width: 84px;
 }
 
 .word-column-header {
@@ -153,7 +157,7 @@ button.option.active {
     font-weight: bold;
     text-align: center;
     letter-spacing: 0.04em;
-    font-size: clamp(11px, 1.5vmin, 14px);
+    font-size: clamp(13px, 1.9vmin, 18px);
     border-bottom: 1px solid var(--die-border);
     padding-bottom: 4px;
     margin-bottom: 4px;
@@ -165,7 +169,7 @@ button.option.active {
 
 .word-list li {
     color: var(--ink);
-    font-size: clamp(12px, 1.5vmin, 15px);
+    font-size: clamp(14px, 2vmin, 19px);
     letter-spacing: 0.04em;
     margin-bottom: 3px;
 }
@@ -186,7 +190,7 @@ button.option.active {
    one column's width, clipping the rest), so the width needs to be handed
    to it directly. */
 .word-list.multi-col {
-    column-gap: 14px;
+    column-gap: 16px;
     column-fill: auto;
 }
 
