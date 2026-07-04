@@ -19,9 +19,9 @@ If you're adding a new game to this repo, keep those constraints in mind — see
 | Game                | File                                       | Description                                                                                                                      |
 |---------------------|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | Boggle              | [boggle.html](boggle.html)                 | Classic Boggle — a randomly generated 4×4 or 5×5 letter grid, timer, interactive word entry, and validation against a large dictionary ([words.js](words.js)). |
-| Boggle (Static)     | [boggle-static.html](boggle-static.html)   | A display-only variant for group play — shows the board and an optional visual timer bar; reveals all possible words when time's up. No interactive word entry. |
+| Boggle (Group Play) | [boggle-static.html](boggle-static.html)   | A display-only variant for group play — shows the board and an optional visual timer bar; reveals all possible words when time's up. No interactive word entry. |
 | Yahtzee             | [yahtzee.html](yahtzee.html)               | Full Yahtzee scorecard for one or more players, including upper-section bonus and joker rules.                                   |
-| Yahtzee Dice Roller | [yahtzee-roller.html](yahtzee-roller.html) | Just the dice — roll and hold dice without tracking a scorecard.                                                                 |
+| Yahtzee (Dice Only) | [yahtzee-roller.html](yahtzee-roller.html) | Just the dice — roll and hold dice without tracking a scorecard.                                                                 |
 
 More games will be added over time; new entries should be linked from [index.html](index.html) as well as this table.
 

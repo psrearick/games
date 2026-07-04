@@ -11,25 +11,25 @@
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="boggle-shared.css">
-    <title>Boggle – Quiet Games</title>
-    <meta name="description" content="Play Boggle online -- a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
+    <title>Boggle — Quiet Games</title>
+    <meta name="description" content="Play Boggle online — a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
     <meta property="og:site_name" content="Quiet Games">
-    <meta property="og:title" content="Boggle – Quiet Games">
-    <meta property="og:description" content="Play Boggle online -- a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
+    <meta property="og:title" content="Boggle — Quiet Games">
+    <meta property="og:description" content="Play Boggle online — a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="/icon-512x512.png">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Boggle – Quiet Games">
-    <meta name="twitter:description" content="Play Boggle online -- a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
+    <meta name="twitter:title" content="Boggle — Quiet Games">
+    <meta name="twitter:description" content="Play Boggle online — a shuffled 4x4 or 5x5 letter grid, timed or untimed, with calm low-contrast visuals and no flashing or motion.">
     <meta name="twitter:image" content="/icon-512x512.png">
     <style>
-        /* A little extra breathing room below the button bar -- especially
+        /* A little extra breathing room below the button bar — especially
            worth it now that the bar has its own border-bottom (see
            .button-bar in shared.css). Raising just the clamp's floor
            (rather than adding a flat amount on top of the whole clamp)
            only changes anything on the smallest screens, where the button
            bar's height happens to land right on that floor with zero gap
-           to the HUD below it -- everywhere the middle (10vmin) or top
+           to the HUD below it — everywhere the middle (10vmin) or top
            (96px) of the clamp already governs, e.g. a normal desktop
            window, this is a no-op. Adding a flat amount unconditionally
            made those cases taller than the viewport for no reason, forcing
@@ -137,7 +137,7 @@
 
         /* Before the game ends, keep the grid fixed at true center and let
            the found-words panel occupy space to its right without
-           shifting it -- unlike the post-game reveal (.board-area rules
+           shifting it — unlike the post-game reveal (.board-area rules
            in boggle-shared.css), which centers the whole shrunk block
            together once the board-area switches to #game.with-list. The
            symmetric side columns are what keep the (auto-width) middle
@@ -163,19 +163,19 @@
 
         /* The found-words list during play is open-ended (a full game can
            turn up a lot of words) and, unlike the post-game reveal, isn't
-           sized to avoid ever scrolling -- so it gets its own scrollbox
+           sized to avoid ever scrolling — so it gets its own scrollbox
            instead of growing the panel indefinitely.
            It's split into side-by-side columns (rendered as separate <ul>s
            by renderFoundWords() in the script below, one flex row) rather
-           than a single list -- a full game can turn up a couple dozen
+           than a single list — a full game can turn up a couple dozen
            words, and a lone column meant checking whether you'd already
            found one could take a lot of scrolling. An earlier version used
            CSS column-count/column-width for this instead of splitting the
-           words in JS -- simpler, but once the words no longer fit the
+           words in JS — simpler, but once the words no longer fit the
            given max-height, a multi-column box is free to add *more*
            columns of its own rather than respect the count, which quietly
            made the list far wider than this box (confirmed: over 2000px in
-           a ~500px box) and turned on horizontal scrolling -- exactly the
+           a ~500px box) and turned on horizontal scrolling — exactly the
            kind of scrolling this site never wants, and worse than it
            sounds since overflow-x defaults to auto here (an "auto"
            overflow-y with no overflow-x set computes the unset axis to
@@ -195,7 +195,7 @@
 
         /* Width is set explicitly per-column in JS (see FOUND_COLUMN_WIDTH
            and renderFoundWords() below) rather than an equal flex share of
-           #found-list's own width -- flex: 0 0 auto here just keeps that
+           #found-list's own width — flex: 0 0 auto here just keeps that
            explicit width from being squeezed. */
         #found-list .word-list {
             flex: 0 0 auto;
@@ -203,19 +203,19 @@
 
         /* Below the 900px breakpoint, pin the whole in-game area to the
            viewport (see body.in-game below) so the found-words list has to
-           shrink instead of the page just growing taller -- the timer,
+           shrink instead of the page just growing taller — the timer,
            grid, and current-word controls stay put and visible, and
            #found-list (the one thing genuinely open-ended) gets a height
            floor so it shrinks to fit but never disappears.
            Nothing here uses flex-grow, and nothing but #found-list uses
-           min-height -- nowhere else in this chain is a real floor wanted,
+           min-height — nowhere else in this chain is a real floor wanted,
            only the ability to shrink, and giving an *intermediate*
            container (e.g. .word-list-panel) its own min-height: 0 backfired:
            it let the panel get shrunk smaller than #found-list's own floor
            demanded, so the list overflowed past its own (too-small) parent
            box instead of the parent growing to fit it. Leaving every
            ancestor at the default automatic minimum lets that calculation
-           do its job -- it already bottoms out correctly at #found-list's
+           do its job — it already bottoms out correctly at #found-list's
            explicit floor, recursively, without help. */
         @media (max-width: 899px) {
             body.scrollable.in-game {
@@ -228,7 +228,7 @@
         }
 
         /* Fallback for when even a fully-shrunk found-words list doesn't
-           leave enough room -- e.g. a landscape phone short enough that
+           leave enough room — e.g. a landscape phone short enough that
            the HUD, grid, and current-word/Submit/Clear controls alone
            (before #found-list's floor is even reached) already exceed
            100dvh. Toggled by JS (see checkInGameOverflow()) only when
@@ -238,7 +238,7 @@
            Without this fallback, the fixed height means overflow spills
            silently past body's own box with no padding-bottom reserved
            after it (that padding is *inside* the fixed-height box, so
-           overflow consumes it rather than extending past it) -- and
+           overflow consumes it rather than extending past it) — and
            since the footer is pinned to the same spot in the viewport
            regardless of scroll position, it ends up permanently covering
            whatever content overflowed into that space, with no amount of
@@ -258,7 +258,7 @@
             #game:not(.with-list) #board-area {
                 flex-direction: column;
                 /* The base rule (boggle-shared.css) sets flex-wrap: wrap for
-                   the row layout used elsewhere -- left as-is here, a
+                   the row layout used elsewhere — left as-is here, a
                    column-direction container with wrap would start a new
                    *column of items to the side* the moment its content
                    doesn't fit the available height, instead of just
@@ -281,15 +281,15 @@
 
         /* Landscape: a short, wide phone doesn't have the height to stack
            the grid above the list without one of the two needing a scroll
-           to bring it into view -- sit them side by side instead, grid on
+           to bring it into view — sit them side by side instead, grid on
            the left, so both are visible together.
            A short viewport is tight everywhere, not just between the grid
-           and the list -- the HUD, current-word/status line, and Submit/
+           and the list — the HUD, current-word/status line, and Submit/
            Clear controls below the board also compete for the same
            vertical space, and used to lose: the grid alone (sized for
            portrait, up to 60vh) could eat most of the viewport, pushing
            those controls below the fold. Worse, once that happened there
-           was no reliable way to scroll down to them by touch -- a drag
+           was no reliable way to scroll down to them by touch — a drag
            starting on the grid is deliberately inert (see .grid's
            touch-action: none, needed so dragging across letters doesn't
            double as a page-scroll gesture), and a drag starting on the
@@ -329,7 +329,7 @@
             }
 
             /* Post-game reveal: the same reasoning as the in-game row
-               above -- a short, wide phone can't stack the grid above the
+               above — a short, wide phone can't stack the grid above the
                word list without needing to scroll to see them together, so
                keep them side by side here too instead of falling back to
                .board-area's default wrap-to-stack behavior (which is what
@@ -354,6 +354,7 @@
     <div class="button-bar">
         <div class="left">
             <a href="index.html"><button>Home</button></a>
+            <button type="button" id="rules-btn">Rules</button>
         </div>
         <div class="right">
             <button id="end-game-btn" class="hidden">End Game</button>
@@ -361,22 +362,35 @@
         </div>
     </div>
 
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title">
+        <div class="rules-dialog-header">
+            <div class="rules-dialog-title" id="rules-dialog-title">Boggle Rules</div>
+            <button type="button" class="rules-dialog-close" id="rules-dialog-close" aria-label="Close">&times;</button>
+        </div>
+
+        <h3>How to Use This Page</h3>
+        <ul>
+            <li>Choose a board size and time limit (or switch to Untimed), then press Start Game.</li>
+            <li>Drag across adjacent letters, or tap them one at a time, to spell a word.</li>
+            <li>Tap the last letter again, or press Enter, to submit the word. Press Escape or Backspace to clear or undo your selection.</li>
+            <li>The HUD shows time remaining (or &infin; if untimed), your score, and words found.</li>
+            <li>Press End Game any time to stop early &mdash; a timed game also ends on its own when the clock runs out.</li>
+            <li>When the game ends, every word the board could have made is revealed, with the ones you found marked.</li>
+        </ul>
+
+        <h3>Full Rules</h3>
+        <ul>
+            <li>The board is a grid of lettered dice (4&times;4 "Classic" or 5&times;5 "Big"), freshly shuffled every game.</li>
+            <li>Build a word by chaining letters that are adjacent to each other, including diagonally. Each die can only be used once per word.</li>
+            <li>Words must be at least 3 letters long. "Qu" on a die counts as one letter, standing in for both Q and U (e.g. "Qu" + "I" + "T" spells QUIT).</li>
+            <li>Only real dictionary words count, checked against the game's built-in word list. Each word only scores once per game.</li>
+            <li>Scoring is by word length: 3&ndash;4 letters = 1 point, 5 = 2, 6 = 3, 7 = 5, 8 or more = 11 points.</li>
+        </ul>
+    </dialog>
+
     <!-- Setup screen -->
     <div class="setup" id="setup">
         <div class="heading">Boggle</div>
-
-        <details class="rules">
-            <summary>How to Play</summary>
-            <div class="rules-content">
-                <ul>
-                    <li>Drag or tap adjacent letters (including diagonals) to build a word.</li>
-                    <li>Words must be at least 3 letters. "Qu" counts as a single letter.</li>
-                    <li>Each word only counts once per game.</li>
-                    <li>Scoring: 3&ndash;4 letters = 1 point, 5 = 2, 6 = 3, 7 = 5, 8+ = 11.</li>
-                    <li>When the game ends, every possible word on the board is revealed.</li>
-                </ul>
-            </div>
-        </details>
 
         <div class="setup-row">
             <div class="label">Board Size</div>
@@ -385,8 +399,14 @@
                 <button class="option" data-size="5">Big 5x5</button>
             </div>
         </div>
-        <div class="setup-row" id="time-limit-row">
+        <div class="setup-row">
             <div class="label">Time Limit</div>
+            <div class="option-group" id="untimed-options">
+                <button class="option" data-untimed="0">Timed</button>
+                <button class="option" data-untimed="1">Untimed</button>
+            </div>
+        </div>
+        <div class="setup-row" id="time-limit-row">
             <div class="option-group" id="time-options">
                 <button class="option" data-minutes="1">1 min</button>
                 <button class="option" data-minutes="2">2 min</button>
@@ -394,15 +414,7 @@
                 <button class="option" data-minutes="5">5 min</button>
             </div>
         </div>
-        <div class="setup-row">
-            <div class="label">Untimed</div>
-            <div class="option-group" id="untimed-options">
-                <button class="option" data-untimed="0">Off</button>
-                <button class="option" data-untimed="1">On</button>
-            </div>
-        </div>
         <button id="start-btn" disabled>Start Game</button>
-<!--        <div class="dictionary-status" id="dictionary-status">Loading dictionary…</div>-->
     </div>
 
     <!-- Game screen -->
@@ -458,10 +470,23 @@
         const timeLimitRowEl = document.getElementById('time-limit-row');
         const untimedOptionsEl = document.getElementById('untimed-options');
         const startBtn = document.getElementById('start-btn');
-        // const dictionaryStatusEl = document.getElementById('dictionary-status');
 
         const endGameBtn = document.getElementById('end-game-btn');
         const newGameBtn = document.getElementById('new-game-btn');
+
+        const rulesBtn = document.getElementById('rules-btn');
+        const rulesDialog = document.getElementById('rules-dialog');
+        const rulesDialogClose = document.getElementById('rules-dialog-close');
+
+        rulesBtn.addEventListener('click', () => rulesDialog.showModal());
+        rulesDialogClose.addEventListener('click', () => rulesDialog.close());
+        // Clicking the ::backdrop fires a click whose target is the dialog
+        // element itself (there's no child to be the target out there) —
+        // clicking anything inside the dialog's own content lands on that
+        // child instead, so this only catches genuine outside clicks.
+        rulesDialog.addEventListener('click', (e) => {
+            if (e.target === rulesDialog) rulesDialog.close();
+        });
 
         const gridEl = document.getElementById('grid');
         const timerValueEl = document.getElementById('timer-value');
@@ -561,7 +586,7 @@
                 if (posInPath === path.length - 1) {
                     // Re-arriving at the tail (tapping the last-selected die
                     // again, or a drag that loops back onto it) is a no-op
-                    // here -- tapping the tail submits the word instead of
+                    // here — tapping the tail submits the word instead of
                     // deselecting it, and that's handled by the caller.
                     return false;
                 }
@@ -591,7 +616,7 @@
             const isNewValidWord = updateValidityHighlight(word);
             // A leftover "not a valid word" / "already found" message from
             // the last submit attempt would otherwise just sit there while
-            // you build a completely different word -- clear it back to
+            // you build a completely different word — clear it back to
             // the idle hint once there's nothing selected, or as soon as
             // the current selection is itself a real, not-yet-found word.
             if (word.length === 0 || isNewValidWord) {
@@ -600,7 +625,7 @@
         }
 
         // Thickens the selection border when the current selection is a
-        // dictionary word that hasn't been found yet -- no new colors needed.
+        // dictionary word that hasn't been found yet — no new colors needed.
         // Returns that same true/false so onPathChanged() can also clear a
         // stale status message once the selection becomes valid.
         function updateValidityHighlight(word) {
@@ -674,7 +699,7 @@
         //
         // On a square grid, straight-line distance to a diagonal neighbor
         // and to the two orthogonal neighbors between it and the last cell
-        // are exactly equal right at the shared corner -- so any tiny wobble
+        // are exactly equal right at the shared corner — so any tiny wobble
         // in a hand-drawn diagonal drag (which is never a perfect 45° line)
         // tips the "nearest center" pick toward whichever orthogonal cell
         // the pointer strayed closer to. Discounting diagonal candidates'
@@ -734,7 +759,7 @@
             // Pressing down on the die that's currently the tail of the
             // path is ambiguous until release: it might be a plain tap
             // (submit the word) or the start of a drag onward to a new
-            // letter (extend the word). Leave the path untouched for now --
+            // letter (extend the word). Leave the path untouched for now —
             // extending is handled by the drag steps below, and a plain tap
             // is resolved in endPointerInteraction.
             tapOnTail = path.length > 0 && path[path.length - 1] === index;
@@ -769,7 +794,7 @@
             lastRawPos = null;
             // A drag submits the (possibly just-extended) word on release.
             // A plain tap that landed on the already-selected tail also
-            // submits -- tapping the last letter again finishes the word
+            // submits — tapping the last letter again finishes the word
             // instead of deselecting it, matching tap-to-build one letter
             // at a time.
             if (gameActive && (dragMoved || tapOnTail)) {
@@ -818,21 +843,21 @@
         }
 
         // How wide a single found-words column is, and the gap between
-        // them -- used to decide how many columns fit, and given to each
+        // them — used to decide how many columns fit, and given to each
         // column as an explicit width (see renderFoundWords()).
         const FOUND_COLUMN_WIDTH = 100;
         const FOUND_COLUMN_GAP = 16;
 
         // How much width the found-words columns have to work with.
         // Below the 900px breakpoint, .word-list-panel actually stretches
-        // to fill real space -- width: 100% of #board-area when stacked in
+        // to fill real space — width: 100% of #board-area when stacked in
         // portrait, flex: 1 of the remaining row in landscape (see the
-        // @media queries above) -- so its rendered width already means
+        // @media queries above) — so its rendered width already means
         // something. At 900px+ the panel is width: fit-content instead (so
         // it stays compact when the list is short), which means its
         // rendered width starts out shrunk around just the "Words Found"
         // title and would never reflect how much room it's actually
-        // allowed -- min(28vw, 320px), mirrored here rather than measured
+        // allowed — min(28vw, 320px), mirrored here rather than measured
         // (getComputedStyle().maxWidth isn't a reliable source for this:
         // it resolves a min()/vw expression to a real pixel value, but
         // returns a plain percentage like "100%" as-is, unresolved, so one
@@ -851,7 +876,7 @@
         // done by hand rather than with CSS columns). Each column gets an
         // explicit width, rather than an equal flex share of #found-list's
         // own width, for the same reason foundColumnBudget() above doesn't
-        // measure #found-list directly -- an explicit width lets the
+        // measure #found-list directly — an explicit width lets the
         // (otherwise circular) fit-content panel size itself around the
         // columns instead of the columns needing the panel's size first.
         function renderFoundWords() {
@@ -881,7 +906,7 @@
 
         function startTimer(minutes) {
             if (minutes <= 0) {
-                // Untimed: no countdown, no auto-end -- the HUD just shows
+                // Untimed: no countdown, no auto-end — the HUD just shows
                 // "no limit" and the player ends the game via End Game.
                 timeLeftSec = 0;
                 timerValueEl.textContent = '∞';
@@ -924,9 +949,9 @@
 
         // Detects the (rare) case where even a fully-shrunk found-words
         // list still doesn't leave enough room during play on a short
-        // screen -- e.g. a landscape phone where the HUD, grid, and
+        // screen — e.g. a landscape phone where the HUD, grid, and
         // current-word/Submit/Clear controls alone already exceed 100dvh
-        // -- and switches from a fixed viewport height to a natural,
+        // — and switches from a fixed viewport height to a natural,
         // scrollable one (see the .overflowing fallback rule above) so
         // nothing ends up permanently hidden behind the footer.
         function checkInGameOverflow() {
@@ -954,7 +979,7 @@
             newGameBtn.classList.remove('hidden');
             // Pins the in-game area to the viewport height on narrow screens
             // (see the max-width: 899px rules above) so the found-words list
-            // is the only thing that scrolls -- removed again in endGame()/
+            // is the only thing that scrolls — removed again in endGame()/
             // returnToSetup() since the post-game reveal is allowed to grow
             // and scroll the whole page instead.
             document.body.classList.add('in-game');
@@ -1041,7 +1066,6 @@
             const dict = buildDictionary();
             WORD_SET = dict.wordSet;
             TRIE = dict.trie;
-            // dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
             startBtn.disabled = false;
         }, 20);
     </script>

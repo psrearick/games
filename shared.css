@@ -119,18 +119,25 @@ body.scrollable {
     border-bottom: 1px solid var(--die-border);
 }
 
-/* A page with three button-bar buttons at once (Home, End Game, New Game --
-   see boggle.html/yahtzee.html mid-game) can be a few pixels too wide for
-   the narrowest phones at the button's normal minimum size, which used to
-   force a label to wrap onto a second line. Shrinking a little further
-   here keeps every label on one line instead, without needing to wrap the
-   whole bar onto two rows (which would eat into the space reserved above
-   it for the fixed bar -- see body.scrollable). */
-@media (max-width: 360px) {
+/* A page with four button-bar buttons at once (Home, Rules, End Game, New
+   Game -- see boggle.html/yahtzee.html mid-game, now that Rules joined the
+   bar too) can be too wide for a phone-width screen at the button's normal
+   minimum size, which would otherwise force a label to wrap onto a second
+   line. Shrinking a little further here keeps every label on one line
+   instead, without needing to wrap the whole bar onto two rows (which
+   would eat into the space reserved above it for the fixed bar -- see
+   body.scrollable). The breakpoint is wider than a single narrow phone
+   because four buttons need the help well before three did. */
+@media (max-width: 480px) {
     .button-bar button {
-        padding-left: clamp(8px, 2vmin, 18px);
-        padding-right: clamp(8px, 2vmin, 18px);
-        font-size: clamp(11px, 1.9vmin, 20px);
+        padding-left: clamp(6px, 1.6vmin, 18px);
+        padding-right: clamp(6px, 1.6vmin, 18px);
+        font-size: clamp(10px, 1.7vmin, 20px);
+    }
+
+    .button-bar .left,
+    .button-bar .right {
+        gap: 6px;
     }
 }
 
@@ -252,64 +259,99 @@ input:focus-visible {
     background: none;
 }
 
-/* ---- Rules disclosure ("How to Play"), used on every game's setup
-   screen. A native <details>/<summary> instead of a JS-driven modal --
-   open/close is instant (nothing here fights the global animation/
-   transition reset above), and it needs no script of its own. Sized to
-   match .setup's width so it lines up whether it's nested inside that
-   panel (Boggle, Yahtzee) or sitting alone in the page flow (the dice-only
-   Yahtzee roller, which has no .setup panel at all). ---- */
-.rules {
-    width: 100%;
-    max-width: min(94vw, 460px);
+/* ---- Rules dialog, opened via the "Rules" button that sits in the
+   button-bar's .left group (next to Home) on every game page. Living in
+   the button-bar rather than the setup screen means it's reachable in
+   both the setup *and* in-game states with a single instance -- important
+   for Boggle in particular, whose in-game layout on narrow screens is
+   already tuned to a tight vertical budget (see boggle.html's own
+   <style>), which an inline expandable block would compete with. A native
+   <dialog> overlays instead of pushing that layout around, needs no
+   script for Escape-to-close, and (like <details> elsewhere on this site)
+   doesn't need any authored open/close animation to feel non-jarring. ---- */
+dialog.rules-dialog {
+    /* The global *, *::before, *::after reset above zeroes every element's
+       margin, which is also what the browser's own UA stylesheet relies on
+       (margin: auto with inset: 0) to center a <dialog>. Restoring it here,
+       on a selector specific enough to win over that reset, is what keeps
+       this centered instead of pinned to the top-left corner. */
+    margin: auto;
+    background: var(--die);
+    color: var(--ink);
+    border: 2px solid var(--die-border);
+    border-radius: 10px;
+    width: min(94vw, 560px);
+    max-width: min(94vw, 560px);
+    max-height: min(88vh, 720px);
+    overflow-y: auto;
+    padding: clamp(18px, 3vmin, 30px);
 }
 
-.rules summary {
+/* Belt-and-suspenders alongside the *, *::before, *::after reset above --
+   ::backdrop is a generated box the universal selector doesn't reach, and
+   some browsers give a dialog's backdrop its own default open/close
+   transition. */
+dialog.rules-dialog::backdrop {
+    background: oklch(from var(--bg) calc(l - 0.2) c h / 0.6);
+    animation: none !important;
+    transition: none !important;
+}
+
+.rules-dialog-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    color: var(--ink);
-    font-weight: bold;
-    letter-spacing: 0.05em;
-    font-size: clamp(13px, 1.8vmin, 17px);
-    user-select: none;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
-/* display: flex above already drops the native marker in current
-   browsers (it only renders for display: list-item); this covers older
-   WebKit, which shows its own marker regardless of display. The
-   caret-via-::before below is the one marker that's actually meant to
-   show. */
-.rules summary::-webkit-details-marker {
-    display: none;
-}
-
-.rules summary::before {
-    content: '▸';
+.rules-dialog-title {
     color: var(--bar);
-    font-size: 0.85em;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    font-size: clamp(16px, 2.2vmin, 20px);
 }
 
-.rules[open] summary::before {
-    content: '▾';
-}
-
-.rules-content {
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.rules-dialog-close {
+    background: none;
+    border: none;
+    padding: 2px 8px;
     color: var(--ink);
-    font-size: clamp(12px, 1.6vmin, 15px);
-    line-height: 1.5;
+    font-size: clamp(18px, 2.4vmin, 22px);
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 6px;
 }
 
-.rules-content ul {
+.rules-dialog-close:hover,
+.rules-dialog-close:focus-visible {
+    background: var(--btn);
+}
+
+.rules-dialog h3 {
+    color: var(--bar);
+    font-size: clamp(14px, 1.8vmin, 17px);
+    letter-spacing: 0.05em;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}
+
+.rules-dialog h3:first-of-type {
+    margin-top: 0;
+}
+
+.rules-dialog ul {
     padding-left: 1.2em;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+}
+
+.rules-dialog li {
+    color: var(--ink);
+    font-size: clamp(13px, 1.6vmin, 15px);
+    line-height: 1.55;
 }
 
 /* ---- Setup panel (used by any game with a pre-game options screen) ---- */

@@ -11,16 +11,16 @@
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="boggle-shared.css">
-    <title>Boggle (Static) – Quiet Games</title>
-    <meta name="description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <title>Boggle (Group Play) — Quiet Games</title>
+    <meta name="description" content="A shared-screen Boggle board for group play — big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
     <meta property="og:site_name" content="Quiet Games">
-    <meta property="og:title" content="Boggle (Static) – Quiet Games">
-    <meta property="og:description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <meta property="og:title" content="Boggle (Group Play) — Quiet Games">
+    <meta property="og:description" content="A shared-screen Boggle board for group play — big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="/icon-512x512.png">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Boggle (Static) – Quiet Games">
-    <meta name="twitter:description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <meta name="twitter:title" content="Boggle (Group Play) — Quiet Games">
+    <meta name="twitter:description" content="A shared-screen Boggle board for group play — big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
     <meta name="twitter:image" content="/icon-512x512.png">
     <style>
         /* ---- Game screen ---- */
@@ -45,7 +45,7 @@
         .timer-bar-fill {
             height: 100%;
             width: 100%;
-            /* Low-contrast on purpose -- this is a background cue for a room
+            /* Low-contrast on purpose — this is a background cue for a room
                of people, not something that should draw the eye. */
             background: var(--bar);
         }
@@ -74,6 +74,7 @@
     <div class="button-bar">
         <div class="left">
             <a href="index.html"><button>Home</button></a>
+            <button type="button" id="rules-btn">Rules</button>
         </div>
         <div class="right">
             <button id="end-game-btn" class="hidden">End Game</button>
@@ -81,21 +82,32 @@
         </div>
     </div>
 
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title">
+        <div class="rules-dialog-header">
+            <div class="rules-dialog-title" id="rules-dialog-title">Boggle (Group Play) Rules</div>
+            <button type="button" class="rules-dialog-close" id="rules-dialog-close" aria-label="Close">&times;</button>
+        </div>
+
+        <h3>How to Use This Page</h3>
+        <ul>
+            <li>Choose a board size, time limit (or Untimed), and whether to show the visual timer bar, then press Start Game.</li>
+            <li>This screen has no word entry &mdash; everyone plays from the same board, calling out or writing down words themselves.</li>
+            <li>Press End Game any time to stop early. It's the only way to end an Untimed game. A timed game also ends on its own when the clock runs out.</li>
+            <li>When the round ends, every possible word on the board is revealed for everyone to check.</li>
+        </ul>
+
+        <h3>Full Rules</h3>
+        <ul>
+            <li>The board is a grid of lettered dice (4&times;4 "Classic" or 5&times;5 "Big"), freshly shuffled every game.</li>
+            <li>Build a word by chaining letters that are adjacent to each other, including diagonally. Each die can only be used once per word.</li>
+            <li>Words must be at least 3 letters long. "Qu" on a die counts as one letter, standing in for both Q and U (e.g. "Qu" + "I" + "T" spells QUIT).</li>
+            <li>This screen doesn't keep score. If you want to keep score, traditional Boggle scoring is by word length: 3&ndash;4 letters = 1 point, 5 = 2, 6 = 3, 7 = 5, 8 or more = 11 points.</li>
+        </ul>
+    </dialog>
+
     <!-- Setup screen -->
     <div class="setup" id="setup">
-        <div class="heading">Boggle (Static)</div>
-
-        <details class="rules">
-            <summary>How to Play</summary>
-            <div class="rules-content">
-                <ul>
-                    <li>Built for a shared screen -- everyone plays from the same board at once.</li>
-                    <li>Find words out loud or on paper; there's no on-screen word entry.</li>
-                    <li>Words must be at least 3 letters. "Qu" counts as a single letter.</li>
-                    <li>When time runs out (or you press End Game in Untimed mode), every possible word on the board is revealed.</li>
-                </ul>
-            </div>
-        </details>
+        <div class="heading">Boggle (Group Play)</div>
 
         <div class="setup-row">
             <div class="label">Board Size</div>
@@ -104,20 +116,19 @@
                 <button class="option" data-size="5">Big 5x5</button>
             </div>
         </div>
-        <div class="setup-row" id="time-limit-row">
+        <div class="setup-row">
             <div class="label">Time Limit</div>
+            <div class="option-group" id="untimed-options">
+                <button class="option" data-untimed="0">Timed</button>
+                <button class="option" data-untimed="1">Untimed</button>
+            </div>
+        </div>
+        <div class="setup-row" id="time-limit-row">
             <div class="option-group" id="time-options">
                 <button class="option" data-minutes="1">1 min</button>
                 <button class="option" data-minutes="2">2 min</button>
                 <button class="option" data-minutes="3">3 min</button>
                 <button class="option" data-minutes="5">5 min</button>
-            </div>
-        </div>
-        <div class="setup-row">
-            <div class="label">Untimed</div>
-            <div class="option-group" id="untimed-options">
-                <button class="option" data-untimed="0">Off</button>
-                <button class="option" data-untimed="1">On</button>
             </div>
         </div>
         <div class="setup-row" id="visual-timer-row">
@@ -128,7 +139,6 @@
             </div>
         </div>
         <button id="start-btn" disabled>Start Game</button>
-<!--        <div class="dictionary-status" id="dictionary-status">Loading dictionary…</div>-->
     </div>
 
     <!-- Game screen -->
@@ -163,10 +173,19 @@
         const visualTimerOptionsEl = document.getElementById('visual-timer-options');
         const visualTimerRowEl = document.getElementById('visual-timer-row');
         const startBtn = document.getElementById('start-btn');
-        // const dictionaryStatusEl = document.getElementById('dictionary-status');
 
         const endGameBtn = document.getElementById('end-game-btn');
         const newGameBtn = document.getElementById('new-game-btn');
+
+        const rulesBtn = document.getElementById('rules-btn');
+        const rulesDialog = document.getElementById('rules-dialog');
+        const rulesDialogClose = document.getElementById('rules-dialog-close');
+
+        rulesBtn.addEventListener('click', () => rulesDialog.showModal());
+        rulesDialogClose.addEventListener('click', () => rulesDialog.close());
+        rulesDialog.addEventListener('click', (e) => {
+            if (e.target === rulesDialog) rulesDialog.close();
+        });
 
         const gridEl = document.getElementById('grid');
         const timerBarWrapEl = document.getElementById('timer-bar-wrap');
@@ -269,7 +288,7 @@
             }, 1000);
         }
 
-        // Steps once a second rather than animating continuously -- calm and
+        // Steps once a second rather than animating continuously — calm and
         // legible from across a room, and easy on anyone sensitive to
         // motion.
         function updateTimerBar() {
@@ -312,7 +331,7 @@
 
         // Time's up (or "End Game" was clicked, which is the only way an
         // untimed game ends): lock the board, slide it over, and reveal
-        // every possible word immediately -- no extra step in between.
+        // every possible word immediately — no extra step in between.
         function endGame() {
             if (!gameActive) return;
             gameActive = false;
@@ -351,7 +370,6 @@
         // "Loading dictionary…" message is visible during the (brief) delay.
         setTimeout(() => {
             TRIE = buildDictionary().trie;
-            // dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
             startBtn.disabled = false;
         }, 20);
     </script>
