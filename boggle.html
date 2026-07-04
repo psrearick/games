@@ -13,6 +13,21 @@
     <link rel="stylesheet" href="boggle-shared.css">
     <title>Boggle</title>
     <style>
+        /* A little extra breathing room below the button bar -- especially
+           worth it now that the bar has its own border-bottom (see
+           .button-bar in shared.css). Raising just the clamp's floor
+           (rather than adding a flat amount on top of the whole clamp)
+           only changes anything on the smallest screens, where the button
+           bar's height happens to land right on that floor with zero gap
+           to the HUD below it -- everywhere the middle (10vmin) or top
+           (96px) of the clamp already governs, e.g. a normal desktop
+           window, this is a no-op. Adding a flat amount unconditionally
+           made those cases taller than the viewport for no reason, forcing
+           a scrollbar that wasn't otherwise needed. */
+        body.scrollable {
+            padding-top: clamp(76px, 10vmin, 96px);
+        }
+
         /* ---- HUD ---- */
         .hud {
             display: flex;
@@ -131,10 +146,41 @@
         /* The found-words list during play is open-ended (a full game can
            turn up a lot of words) and, unlike the post-game reveal, isn't
            sized to avoid ever scrolling -- so it gets its own scrollbox
-           instead of growing the panel indefinitely. */
+           instead of growing the panel indefinitely.
+           It's split into side-by-side columns (rendered as separate <ul>s
+           by renderFoundWords() in the script below, one flex row) rather
+           than a single list -- a full game can turn up a couple dozen
+           words, and a lone column meant checking whether you'd already
+           found one could take a lot of scrolling. An earlier version used
+           CSS column-count/column-width for this instead of splitting the
+           words in JS -- simpler, but once the words no longer fit the
+           given max-height, a multi-column box is free to add *more*
+           columns of its own rather than respect the count, which quietly
+           made the list far wider than this box (confirmed: over 2000px in
+           a ~500px box) and turned on horizontal scrolling -- exactly the
+           kind of scrolling this site never wants, and worse than it
+           sounds since overflow-x defaults to auto here (an "auto"
+           overflow-y with no overflow-x set computes the unset axis to
+           auto too). Explicit overflow-x: hidden below is belt-and-
+           suspenders against that same class of bug. Splitting the words
+           into a fixed number of columns ourselves (see foundColumnBudget()
+           and renderFoundWords() below) means the column count only ever
+           depends on how much width is available, never on how much
+           content is in it. */
         #found-list {
+            display: flex;
+            gap: 16px;
             max-height: min(55vh, 480px);
             overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Width is set explicitly per-column in JS (see FOUND_COLUMN_WIDTH
+           and renderFoundWords() below) rather than an equal flex share of
+           #found-list's own width -- flex: 0 0 auto here just keeps that
+           explicit width from being squeezed. */
+        #found-list .word-list {
+            flex: 0 0 auto;
         }
 
         /* Below the 900px breakpoint, pin the whole in-game area to the
@@ -152,17 +198,7 @@
            box instead of the parent growing to fit it. Leaving every
            ancestor at the default automatic minimum lets that calculation
            do its job -- it already bottoms out correctly at #found-list's
-           explicit floor, recursively, without help.
-           #found-list also switches to two columns here -- a full game can
-           turn up a couple dozen words, and on a phone-width column that
-           used to mean either a lot of internal scrolling or (with the
-           height floor) a list that only ever shows a handful at once.
-           Columns roughly double how much is visible before either kicks
-           in. column-count is fixed (rather than a responsive column-width)
-           so the browser can't respond to a tall list by silently adding a
-           third column and overflowing the box sideways -- see the near-
-           identical reasoning for the post-game reveal's own columns in
-           boggle-shared.js. */
+           explicit floor, recursively, without help. */
         @media (max-width: 899px) {
             body.scrollable.in-game {
                 height: 100dvh;
@@ -170,9 +206,31 @@
 
             #game:not(.with-list) #found-list {
                 min-height: min(120px, 30vh);
-                column-count: 2;
-                column-gap: 16px;
             }
+        }
+
+        /* Fallback for when even a fully-shrunk found-words list doesn't
+           leave enough room -- e.g. a landscape phone short enough that
+           the HUD, grid, and current-word/Submit/Clear controls alone
+           (before #found-list's floor is even reached) already exceed
+           100dvh. Toggled by JS (see checkInGameOverflow()) only when
+           needed, rather than always in effect, since the fixed height
+           above is what makes #found-list shrink to fit in the first
+           place, and this needs to stay off whenever that's working.
+           Without this fallback, the fixed height means overflow spills
+           silently past body's own box with no padding-bottom reserved
+           after it (that padding is *inside* the fixed-height box, so
+           overflow consumes it rather than extending past it) -- and
+           since the footer is pinned to the same spot in the viewport
+           regardless of scroll position, it ends up permanently covering
+           whatever content overflowed into that space, with no amount of
+           scrolling able to bring it out from underneath. Switching to
+           min-height instead lets the page grow to fit and reserve that
+           padding properly, so the overflow scrolls clear of the footer
+           like it would anywhere else on the site. */
+        body.scrollable.in-game.overflowing {
+            height: auto;
+            min-height: 100dvh;
         }
 
         /* Portrait: plenty of vertical room on a tall phone, and the grid
@@ -206,8 +264,28 @@
         /* Landscape: a short, wide phone doesn't have the height to stack
            the grid above the list without one of the two needing a scroll
            to bring it into view -- sit them side by side instead, grid on
-           the left, so both are visible together. */
+           the left, so both are visible together.
+           A short viewport is tight everywhere, not just between the grid
+           and the list -- the HUD, current-word/status line, and Submit/
+           Clear controls below the board also compete for the same
+           vertical space, and used to lose: the grid alone (sized for
+           portrait, up to 60vh) could eat most of the viewport, pushing
+           those controls below the fold. Worse, once that happened there
+           was no reliable way to scroll down to them by touch -- a drag
+           starting on the grid is deliberately inert (see .grid's
+           touch-action: none, needed so dragging across letters doesn't
+           double as a page-scroll gesture), and a drag starting on the
+           found-words list scrolls *that list* instead of the page once
+           it has its own overflow. Shrinking the grid (reusing the same
+           min(38vw, 48vh) the post-game reveal already sizes it to, since
+           it's the same "share the row with the list" situation) and
+           tightening the gaps below is aimed at not needing that scroll
+           in the first place. */
         @media (max-width: 899px) and (orientation: landscape) {
+            #game {
+                gap: 8px;
+            }
+
             #game:not(.with-list) #board-area {
                 flex-direction: row;
                 flex-wrap: nowrap;
@@ -218,6 +296,7 @@
 
             #game:not(.with-list) #board-area .grid {
                 flex: 0 0 auto;
+                width: min(38vw, 48vh);
             }
 
             #game:not(.with-list) #board-area .word-list-panel {
@@ -228,7 +307,31 @@
             }
 
             #game:not(.with-list) #found-list {
-                max-height: min(50vh, 420px);
+                max-height: min(38vh, 320px);
+            }
+
+            .word-panel {
+                gap: 4px;
+            }
+
+            .current-word {
+                min-height: 1.1em;
+            }
+
+            /* Post-game reveal: the same reasoning as the in-game row
+               above -- a short, wide phone can't stack the grid above the
+               word list without needing to scroll to see them together, so
+               keep them side by side here too instead of falling back to
+               .board-area's default wrap-to-stack behavior (which is what
+               portrait/tablet-portrait should still do, unchanged). */
+            #game.with-list #board-area {
+                flex-wrap: nowrap;
+                align-items: flex-start;
+                justify-content: flex-start;
+            }
+
+            #game.with-list #board-area .word-list-panel {
+                max-width: min(58vw, 560px);
             }
         }
 
@@ -250,10 +353,6 @@
             text-align: center;
         }
 
-        .status-line.success {
-            color: var(--accent);
-            font-weight: bold;
-        }
     </style>
 </head>
 
@@ -362,6 +461,7 @@
         const wordControlsEl = document.getElementById('word-controls');
         const submitBtn = document.getElementById('submit-btn');
         const clearBtn = document.getElementById('clear-btn');
+        const wordListPanelEl = document.getElementById('word-list-panel');
         const wordListTitleEl = document.getElementById('word-list-title');
         const foundListEl = document.getElementById('found-list');
         const wordColumnsEl = document.getElementById('word-columns');
@@ -472,19 +572,27 @@
             renderPathHighlight();
             const word = currentWord();
             currentWordEl.textContent = word ? word.toUpperCase() : ' ';
-            updateValidityHighlight(word);
-            if (word.length === 0) {
-                showStatus('Drag or tap adjacent letters to build a word.', 'info');
+            const isNewValidWord = updateValidityHighlight(word);
+            // A leftover "not a valid word" / "already found" message from
+            // the last submit attempt would otherwise just sit there while
+            // you build a completely different word -- clear it back to
+            // the idle hint once there's nothing selected, or as soon as
+            // the current selection is itself a real, not-yet-found word.
+            if (word.length === 0 || isNewValidWord) {
+                showStatus('Drag or tap adjacent letters to build a word.');
             }
         }
 
         // Thickens the selection border when the current selection is a
         // dictionary word that hasn't been found yet -- no new colors needed.
+        // Returns that same true/false so onPathChanged() can also clear a
+        // stale status message once the selection becomes valid.
         function updateValidityHighlight(word) {
             const isNewValidWord = word.length >= MIN_WORD_LENGTH
                 && WORD_SET.has(word)
                 && !foundWords.some(f => f.word === word);
             gridEl.classList.toggle('has-valid-word', isNewValidWord);
+            return isNewValidWord;
         }
 
         function renderPathHighlight() {
@@ -509,7 +617,7 @@
 
         function clearPath() {
             resetSelection();
-            showStatus('Drag or tap adjacent letters to build a word.', 'info');
+            showStatus('Drag or tap adjacent letters to build a word.');
         }
 
         // ---- Pointer (mouse/touch/pen) handling ----
@@ -663,32 +771,30 @@
             if (!gameActive) return;
             const word = currentWord();
             if (word.length < MIN_WORD_LENGTH) {
-                showStatus('Words need at least ' + MIN_WORD_LENGTH + ' letters.', 'info');
+                showStatus('Words need at least ' + MIN_WORD_LENGTH + ' letters.');
                 resetSelection();
                 return;
             }
             if (foundWords.some(f => f.word === word)) {
-                showStatus(word.toUpperCase() + ' — already found.', 'info');
+                showStatus(word.toUpperCase() + ' — already found.');
                 resetSelection();
                 return;
             }
             if (!WORD_SET.has(word)) {
-                showStatus(word.toUpperCase() + ' — not a valid word.', 'info');
+                showStatus(word.toUpperCase() + ' — not a valid word.');
                 resetSelection();
                 return;
             }
             const points = pointsForLength(word.length);
             foundWords.push({ word, points });
             score += points;
-            showStatus(word.toUpperCase() + ' — +' + points + ' point' + (points === 1 ? '' : 's') + '!', 'success');
             resetSelection();
             renderFoundWords();
             renderScore();
         }
 
-        function showStatus(text, kind) {
+        function showStatus(text) {
             statusLineEl.textContent = text;
-            statusLineEl.classList.toggle('success', kind === 'success');
         }
 
         function renderScore() {
@@ -696,15 +802,64 @@
             foundCountValueEl.textContent = foundWords.length;
         }
 
+        // How wide a single found-words column is, and the gap between
+        // them -- used to decide how many columns fit, and given to each
+        // column as an explicit width (see renderFoundWords()).
+        const FOUND_COLUMN_WIDTH = 100;
+        const FOUND_COLUMN_GAP = 16;
+
+        // How much width the found-words columns have to work with.
+        // Below the 900px breakpoint, .word-list-panel actually stretches
+        // to fill real space -- width: 100% of #board-area when stacked in
+        // portrait, flex: 1 of the remaining row in landscape (see the
+        // @media queries above) -- so its rendered width already means
+        // something. At 900px+ the panel is width: fit-content instead (so
+        // it stays compact when the list is short), which means its
+        // rendered width starts out shrunk around just the "Words Found"
+        // title and would never reflect how much room it's actually
+        // allowed -- min(28vw, 320px), mirrored here rather than measured
+        // (getComputedStyle().maxWidth isn't a reliable source for this:
+        // it resolves a min()/vw expression to a real pixel value, but
+        // returns a plain percentage like "100%" as-is, unresolved, so one
+        // read can't handle both cases).
+        function foundColumnBudget() {
+            const cs = getComputedStyle(wordListPanelEl);
+            const padding = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+            const width = window.innerWidth < 900
+                ? wordListPanelEl.clientWidth
+                : Math.min(0.28 * window.innerWidth, 320);
+            return Math.max(FOUND_COLUMN_WIDTH, width - padding);
+        }
+
+        // Splits the found words into side-by-side <ul> columns instead of
+        // one long list (see the #found-list comment above for why this is
+        // done by hand rather than with CSS columns). Each column gets an
+        // explicit width, rather than an equal flex share of #found-list's
+        // own width, for the same reason foundColumnBudget() above doesn't
+        // measure #found-list directly -- an explicit width lets the
+        // (otherwise circular) fit-content panel size itself around the
+        // columns instead of the columns needing the panel's size first.
         function renderFoundWords() {
             const sorted = sortWords(foundWords.map(f => f.word))
                 .map(word => foundWords.find(f => f.word === word));
+
             foundListEl.innerHTML = '';
-            sorted.forEach(f => {
-                const li = document.createElement('li');
-                li.textContent = f.word.toUpperCase() + ' (' + f.points + ')';
-                foundListEl.appendChild(li);
-            });
+            const budget = foundColumnBudget();
+            const cols = Math.max(1, Math.floor((budget + FOUND_COLUMN_GAP) / (FOUND_COLUMN_WIDTH + FOUND_COLUMN_GAP)));
+            const perCol = Math.ceil(sorted.length / cols) || 1;
+
+            for (let i = 0; i < sorted.length; i += perCol) {
+                const ul = document.createElement('ul');
+                ul.className = 'word-list';
+                ul.style.width = FOUND_COLUMN_WIDTH + 'px';
+                sorted.slice(i, i + perCol).forEach(f => {
+                    const li = document.createElement('li');
+                    li.textContent = f.word.toUpperCase() + ' (' + f.points + ')';
+                    ul.appendChild(li);
+                });
+                foundListEl.appendChild(ul);
+            }
+            checkInGameOverflow();
         }
 
         // ================= Timer =================
@@ -746,6 +901,20 @@
             document.body.style.overflowY = '';
         }
 
+        // Detects the (rare) case where even a fully-shrunk found-words
+        // list still doesn't leave enough room during play on a short
+        // screen -- e.g. a landscape phone where the HUD, grid, and
+        // current-word/Submit/Clear controls alone already exceed 100dvh
+        // -- and switches from a fixed viewport height to a natural,
+        // scrollable one (see the .overflowing fallback rule above) so
+        // nothing ends up permanently hidden behind the footer.
+        function checkInGameOverflow() {
+            document.body.classList.remove('overflowing');
+            if (document.documentElement.scrollHeight > window.innerHeight) {
+                document.body.classList.add('overflowing');
+            }
+        }
+
         function startGame() {
             score = 0;
             foundWords = [];
@@ -755,7 +924,7 @@
             renderPathHighlight();
             currentWordEl.textContent = ' ';
             resetPanelsForPlay();
-            showStatus('Drag or tap adjacent letters to build a word.', 'info');
+            showStatus('Drag or tap adjacent letters to build a word.');
             renderFoundWords();
             renderScore();
 
@@ -769,6 +938,7 @@
             // returnToSetup() since the post-game reveal is allowed to grow
             // and scroll the whole page instead.
             document.body.classList.add('in-game');
+            checkInGameOverflow();
 
             gameActive = true;
             startTimer(timeLimitMinutes);
@@ -828,6 +998,15 @@
         submitBtn.addEventListener('click', submitWord);
         clearBtn.addEventListener('click', clearPath);
 
+        // Rotating the phone mid-game changes both the available height and
+        // (see foundColumnBudget()) how many found-words columns fit, and
+        // whether the .overflowing fallback above is needed.
+        window.addEventListener('resize', () => {
+            if (gameActive) {
+                renderFoundWords();
+            }
+        });
+
         document.addEventListener('keydown', (e) => {
             if (!gameActive) return;
             if (e.key === 'Enter') {
@@ -853,8 +1032,8 @@
 
     <footer class="site-footer">
         <a href="about.html">About</a>
-        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support me on Ko-fi</a>
-        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light theme</button>
+        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support Me</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light Theme</button>
     </footer>
 
     <script src="theme.js"></script>

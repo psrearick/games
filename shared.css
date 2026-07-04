@@ -23,14 +23,27 @@
    exception is --die-kept, which normally lightens the die to stand out
    against a dark background; near the top of the lightness range that
    would wash out against the light background instead, so it's flipped to
-   darken. */
+   darken.
+   --bg/--die/--ink also carry a faint warm hue (85, a soft beige) instead of
+   reusing --bar/--accent's cool blue -- a plain gray "paper" read flatter
+   and more sterile than the dark theme's tinted charcoal, and a warm neutral
+   against the blue heading/accent color is a more deliberate pairing than
+   an accidental one.
+   The lightness values themselves were picked by matching WCAG contrast
+   ratios against the *dark* theme's equivalent pairs (measured, not just
+   eyeballed from the OKLCH numbers -- lightness and perceptual contrast
+   don't move together linearly, especially near the light end of the
+   scale). An earlier version mirrored the dark theme's lightness gaps
+   directly and ended up with ~10:1 text contrast -- far higher than the
+   dark theme's own ~3.7:1, and exactly the "too much contrast" this whole
+   palette exists to avoid. */
 :root[data-theme="light"] {
-    --bg: oklch(0.95 0.006 253.99);
-    --die: oklch(0.86 0.01 252.26);
+    --bg: oklch(0.95 0.012 85);
+    --die: oklch(0.86 0.016 85);
     --die-kept: oklch(from var(--die) calc(l - 0.10) c h);
-    --ink: oklch(0.34 0.01 247.86);
-    --bar: oklch(0.42 0.05 248.57);
-    --accent: oklch(0.50 0.10 248.57);
+    --ink: oklch(0.54 0.01 85);
+    --bar: oklch(0.60 0.05 248.57);
+    --accent: oklch(0.51 0.10 248.57);
     --warn: oklch(0.55 0.07 55);
 }
 
@@ -139,6 +152,8 @@ body.scrollable {
 
 .controls {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: clamp(12px, 2.4vmin, 28px);
 }
 
@@ -186,7 +201,7 @@ input[type="text"] {
     right: 0;
     bottom: 0;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     gap: clamp(16px, 3vmin, 32px);
     padding: 0.85rem 1rem;
     z-index: 2;
@@ -215,13 +230,12 @@ input[type="text"] {
     opacity: 1;
 }
 
-/* Tucked at the right edge, away from the About/Ko-fi links, so it reads
-   as a quiet utility control rather than another call-to-action. */
+/* Sits in the flow alongside About/Ko-fi (see .site-footer's
+   justify-content: space-between) rather than off on its own, so the three
+   links read as one evenly-spaced row -- About on the left, Ko-fi in the
+   middle, theme toggle on the right -- instead of two links huddled in the
+   center with this one stranded apart from them. */
 .theme-toggle {
-    position: absolute;
-    top: 50%;
-    right: clamp(12px, 2vw, 24px);
-    transform: translateY(-50%);
     background: none;
     border: none;
     padding: 0;

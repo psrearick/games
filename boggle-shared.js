@@ -177,18 +177,31 @@ const SUB_COLUMN_WIDTH = 84;
 const SUB_COLUMN_GAP = 16;
 
 // The widest a single length's sub-column layout is ever allowed to grow,
-// derived from the same viewport-relative cap .word-list-panel uses (see
-// boggle-shared.css -- 94vw below 900px, 66vw above it). Without this, a
-// word-rich length (lots of 3- or 4-letter words) would keep adding columns
-// sideways with no limit, running the panel's background box past its own
-// max-width and off the edge of the screen -- horizontal scrolling, which
-// this site never wants. Capping the column count means a word-rich length
-// instead grows *taller* (more rows within the same columns), which the
-// page is already allowed to scroll to see.
+// derived from how much width .word-list-panel actually has to work with.
+// Without this, a word-rich length (lots of 3- or 4-letter words) would keep
+// adding columns sideways with no limit, running the panel's background box
+// past its own max-width and off the edge of the screen -- horizontal
+// scrolling, which this site never wants. Capping the column count means a
+// word-rich length instead grows *taller* (more rows within the same
+// columns), which the page is already allowed to scroll to see.
+//
+// Most of the time the panel gets a viewport-relative share (94vw below
+// 900px, 66vw above it -- see boggle-shared.css). But on a landscape phone,
+// boggle.html (not boggle-static.html, which never shares a row with the
+// grid) sits the post-game reveal's grid and word list side by side instead
+// of stacked, so the list only gets whatever's left over after the grid,
+// not its usual full-width share -- see #game.with-list #board-area in
+// boggle.html's own <style>. Checking #board-area's actual computed
+// flex-wrap (rather than hard-coding "boggle.html + landscape + <900px")
+// detects that case directly, so this stays correct if either page's
+// layout rules change later.
 function maxSubColumns() {
-    const widthFraction = window.innerWidth < 900 ? 0.94 : 0.66;
-    const availableWidth = Math.min(widthFraction * window.innerWidth, 1400) - 40;
-    return Math.max(1, Math.floor((availableWidth + SUB_COLUMN_GAP) / (SUB_COLUMN_WIDTH + SUB_COLUMN_GAP)));
+    const boardArea = document.getElementById('board-area');
+    const sharesRowWithGrid = boardArea && getComputedStyle(boardArea).flexWrap === 'nowrap';
+    const availableWidth = sharesRowWithGrid
+        ? Math.min(0.58 * window.innerWidth, 560)
+        : Math.min((window.innerWidth < 900 ? 0.94 : 0.66) * window.innerWidth, 1400);
+    return Math.max(1, Math.floor((availableWidth - 40 + SUB_COLUMN_GAP) / (SUB_COLUMN_WIDTH + SUB_COLUMN_GAP)));
 }
 
 // Renders every word in allWordsSet into `container`, one column per

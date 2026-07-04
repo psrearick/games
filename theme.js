@@ -9,12 +9,12 @@
     function apply(theme) {
         if (theme === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
-            toggle.textContent = 'Dark theme';
+            toggle.textContent = 'Dark Theme';
             toggle.setAttribute('aria-label', 'Switch to dark theme');
             if (meta) meta.setAttribute('content', '#e9ebee');
         } else {
             document.documentElement.removeAttribute('data-theme');
-            toggle.textContent = 'Light theme';
+            toggle.textContent = 'Light Theme';
             toggle.setAttribute('aria-label', 'Switch to light theme');
             if (meta) meta.setAttribute('content', '#2c3035');
         }
