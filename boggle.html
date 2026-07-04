@@ -68,9 +68,17 @@
             width: 100%;
         }
 
-        /* ---- Grid ---- */
-        .grid {
+        /* ---- Grid + status ---- */
+        .grid-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
             width: min(80vw, 60vh);
+        }
+
+        .grid {
+            width: 100%;
             touch-action: none;
         }
 
@@ -132,7 +140,7 @@
                 align-items: start;
             }
 
-            #game:not(.with-list) #board-area .grid {
+            #game:not(.with-list) #board-area .grid-stack {
                 grid-column: 2;
             }
 
@@ -251,7 +259,7 @@
                 width: 100%;
             }
 
-            #game:not(.with-list) #board-area .grid {
+            #game:not(.with-list) #board-area .grid-stack {
                 flex: 0 0 auto;
             }
 
@@ -294,7 +302,7 @@
                 width: 100%;
             }
 
-            #game:not(.with-list) #board-area .grid {
+            #game:not(.with-list) #board-area .grid-stack {
                 flex: 0 0 auto;
                 width: min(38vw, 48vh);
             }
@@ -308,14 +316,6 @@
 
             #game:not(.with-list) #found-list {
                 max-height: min(38vh, 320px);
-            }
-
-            .word-panel {
-                gap: 4px;
-            }
-
-            .current-word {
-                min-height: 1.1em;
             }
 
             /* Post-game reveal: the same reasoning as the in-game row
@@ -335,23 +335,6 @@
             }
         }
 
-        /* ---- Current word / controls ---- */
-        .word-panel {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            width: min(94vw, 460px);
-        }
-
-        .current-word {
-            min-height: 1.4em;
-            font-size: clamp(18px, 3vmin, 28px);
-            font-weight: bold;
-            letter-spacing: 0.08em;
-            color: var(--ink);
-            text-align: center;
-        }
 
     </style>
 </head>
@@ -408,20 +391,14 @@
         </div>
 
         <div class="board-area" id="board-area">
-            <div class="grid" id="grid"></div>
+            <div class="grid-stack">
+                <div class="grid" id="grid"></div>
+                <div class="status-line" id="status-line">Drag or tap adjacent letters to build a word.</div>
+            </div>
             <div class="word-list-panel" id="word-list-panel">
                 <div class="title" id="word-list-title">Words Found</div>
                 <ul class="word-list" id="found-list"></ul>
                 <div class="word-columns hidden" id="word-columns"></div>
-            </div>
-        </div>
-
-        <div class="word-panel">
-            <div class="current-word" id="current-word">&nbsp;</div>
-            <div class="status-line" id="status-line">Drag or tap adjacent letters to build a word.</div>
-            <div class="controls" id="word-controls">
-                <button id="submit-btn">Submit</button>
-                <button id="clear-btn">Clear</button>
             </div>
         </div>
     </div>
@@ -456,11 +433,7 @@
         const timerValueEl = document.getElementById('timer-value');
         const scoreValueEl = document.getElementById('score-value');
         const foundCountValueEl = document.getElementById('found-count-value');
-        const currentWordEl = document.getElementById('current-word');
         const statusLineEl = document.getElementById('status-line');
-        const wordControlsEl = document.getElementById('word-controls');
-        const submitBtn = document.getElementById('submit-btn');
-        const clearBtn = document.getElementById('clear-btn');
         const wordListPanelEl = document.getElementById('word-list-panel');
         const wordListTitleEl = document.getElementById('word-list-title');
         const foundListEl = document.getElementById('found-list');
@@ -571,7 +544,6 @@
         function onPathChanged() {
             renderPathHighlight();
             const word = currentWord();
-            currentWordEl.textContent = word ? word.toUpperCase() : ' ';
             const isNewValidWord = updateValidityHighlight(word);
             // A leftover "not a valid word" / "already found" message from
             // the last submit attempt would otherwise just sit there while
@@ -611,7 +583,6 @@
         function resetSelection() {
             path = [];
             renderPathHighlight();
-            currentWordEl.textContent = ' ';
             updateValidityHighlight('');
         }
 
@@ -890,8 +861,6 @@
         // builder and controls are shown, and the word-list panel shows the
         // (empty) found-words list rather than the all-words columns.
         function resetPanelsForPlay() {
-            currentWordEl.classList.remove('hidden');
-            wordControlsEl.classList.remove('hidden');
             wordListTitleEl.textContent = 'Words Found';
             foundListEl.classList.remove('hidden');
             wordColumnsEl.classList.add('hidden');
@@ -922,7 +891,6 @@
             buildBoard(boardSize);
             renderGrid();
             renderPathHighlight();
-            currentWordEl.textContent = ' ';
             resetPanelsForPlay();
             showStatus('Drag or tap adjacent letters to build a word.');
             renderFoundWords();
@@ -955,8 +923,6 @@
             // Dice do nothing once the game is over, so let a touch drag
             // over the board scroll the page instead of being swallowed.
             gridEl.classList.add('inactive');
-            currentWordEl.classList.add('hidden');
-            wordControlsEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
             statusLineEl.innerHTML = '&nbsp;';
 
@@ -995,8 +961,6 @@
         startBtn.addEventListener('click', startGame);
         endGameBtn.addEventListener('click', endGame);
         newGameBtn.addEventListener('click', returnToSetup);
-        submitBtn.addEventListener('click', submitWord);
-        clearBtn.addEventListener('click', clearPath);
 
         // Rotating the phone mid-game changes both the available height and
         // (see foundColumnBudget()) how many found-words columns fit, and
