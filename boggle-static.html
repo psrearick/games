@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
@@ -56,7 +59,7 @@
     </style>
 </head>
 
-<body>
+<body class="scrollable">
 
     <div class="button-bar">
         <div class="left">
@@ -307,6 +310,14 @@
             startBtn.disabled = false;
         }, 20);
     </script>
+
+    <footer class="site-footer">
+        <a href="about.html">About</a>
+        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support me on Ko-fi</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light theme</button>
+    </footer>
+
+    <script src="theme.js"></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {

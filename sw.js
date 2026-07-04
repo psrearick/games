@@ -1,5 +1,5 @@
 const CACHE_NAME = "static-v3";
-const PRECACHE_URLS = ["/", "/index.html", "/boggle-static.html", "/yahtzee-roller.html", "/boggle.html", "/yahtzee.html", "/words.js", "/shared.css"];
+const PRECACHE_URLS = ["/", "/index.html", "/boggle-static.html", "/yahtzee-roller.html", "/boggle.html", "/yahtzee.html", "/about.html", "/words.js", "/shared.css", "/theme.js"];
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

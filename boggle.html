@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
+    <script>
+        if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
@@ -134,6 +137,101 @@
             overflow-y: auto;
         }
 
+        /* Below the 900px breakpoint, pin the whole in-game area to the
+           viewport (see body.in-game below) so the found-words list has to
+           shrink instead of the page just growing taller -- the timer,
+           grid, and current-word controls stay put and visible, and
+           #found-list (the one thing genuinely open-ended) gets a height
+           floor so it shrinks to fit but never disappears.
+           Nothing here uses flex-grow, and nothing but #found-list uses
+           min-height -- nowhere else in this chain is a real floor wanted,
+           only the ability to shrink, and giving an *intermediate*
+           container (e.g. .word-list-panel) its own min-height: 0 backfired:
+           it let the panel get shrunk smaller than #found-list's own floor
+           demanded, so the list overflowed past its own (too-small) parent
+           box instead of the parent growing to fit it. Leaving every
+           ancestor at the default automatic minimum lets that calculation
+           do its job -- it already bottoms out correctly at #found-list's
+           explicit floor, recursively, without help.
+           #found-list also switches to two columns here -- a full game can
+           turn up a couple dozen words, and on a phone-width column that
+           used to mean either a lot of internal scrolling or (with the
+           height floor) a list that only ever shows a handful at once.
+           Columns roughly double how much is visible before either kicks
+           in. column-count is fixed (rather than a responsive column-width)
+           so the browser can't respond to a tall list by silently adding a
+           third column and overflowing the box sideways -- see the near-
+           identical reasoning for the post-game reveal's own columns in
+           boggle-shared.js. */
+        @media (max-width: 899px) {
+            body.scrollable.in-game {
+                height: 100dvh;
+            }
+
+            #game:not(.with-list) #found-list {
+                min-height: min(120px, 30vh);
+                column-count: 2;
+                column-gap: 16px;
+            }
+        }
+
+        /* Portrait: plenty of vertical room on a tall phone, and the grid
+           wants its full width, so stack the grid above the word-list
+           panel. */
+        @media (max-width: 899px) and (orientation: portrait) {
+            #game:not(.with-list) #board-area {
+                flex-direction: column;
+                /* The base rule (boggle-shared.css) sets flex-wrap: wrap for
+                   the row layout used elsewhere -- left as-is here, a
+                   column-direction container with wrap would start a new
+                   *column of items to the side* the moment its content
+                   doesn't fit the available height, instead of just
+                   overflowing downward. That silently pushed the word-list
+                   panel next to the grid and off the edge of the screen. */
+                flex-wrap: nowrap;
+                align-items: center;
+                width: 100%;
+            }
+
+            #game:not(.with-list) #board-area .grid {
+                flex: 0 0 auto;
+            }
+
+            #game:not(.with-list) #board-area .word-list-panel {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        /* Landscape: a short, wide phone doesn't have the height to stack
+           the grid above the list without one of the two needing a scroll
+           to bring it into view -- sit them side by side instead, grid on
+           the left, so both are visible together. */
+        @media (max-width: 899px) and (orientation: landscape) {
+            #game:not(.with-list) #board-area {
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: flex-start;
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            #game:not(.with-list) #board-area .grid {
+                flex: 0 0 auto;
+            }
+
+            #game:not(.with-list) #board-area .word-list-panel {
+                flex: 1;
+                min-width: 0;
+                width: auto;
+                max-width: none;
+            }
+
+            #game:not(.with-list) #found-list {
+                max-height: min(50vh, 420px);
+            }
+        }
+
         /* ---- Current word / controls ---- */
         .word-panel {
             display: flex;
@@ -159,7 +257,7 @@
     </style>
 </head>
 
-<body>
+<body class="scrollable">
 
     <div class="button-bar">
         <div class="left">
@@ -665,6 +763,12 @@
             gameEl.classList.remove('hidden');
             endGameBtn.classList.remove('hidden');
             newGameBtn.classList.remove('hidden');
+            // Pins the in-game area to the viewport height on narrow screens
+            // (see the max-width: 899px rules above) so the found-words list
+            // is the only thing that scrolls -- removed again in endGame()/
+            // returnToSetup() since the post-game reveal is allowed to grow
+            // and scroll the whole page instead.
+            document.body.classList.add('in-game');
 
             gameActive = true;
             startTimer(timeLimitMinutes);
@@ -674,6 +778,7 @@
             if (!gameActive) return;
             gameActive = false;
             clearInterval(timerInterval);
+            document.body.classList.remove('in-game');
             path = [];
             renderPathHighlight();
             gridEl.classList.remove('has-valid-word');
@@ -709,6 +814,7 @@
         function returnToSetup() {
             gameActive = false;
             clearInterval(timerInterval);
+            document.body.classList.remove('in-game');
             resetPanelsForPlay();
             gameEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
@@ -744,6 +850,14 @@
             startBtn.disabled = false;
         }, 20);
     </script>
+
+    <footer class="site-footer">
+        <a href="about.html">About</a>
+        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support me on Ko-fi</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light theme</button>
+    </footer>
+
+    <script src="theme.js"></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {

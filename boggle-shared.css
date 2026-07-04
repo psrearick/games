@@ -124,6 +124,22 @@ button.option.active {
     width: fit-content;
     max-width: min(66vw, 1400px);
     min-width: 0;
+    /* Belt-and-suspenders against the multi-col word list (see
+       maxSubColumns() in boggle-shared.js) ever pushing this box's
+       background past its own edge and causing horizontal scrolling. */
+    overflow-x: hidden;
+}
+
+/* Below 900px, 66vw is a needlessly tight cap -- on a phone there's no
+   large empty margin to preserve either side of a centered board, so the
+   post-game reveal has room to be much wider before it would ever need a
+   horizontal scrollbar. A wider box means more (and, per maxSubColumns()
+   in boggle-shared.js, wider) sub-columns fit per word length before
+   falling back to extra rows instead. */
+@media (max-width: 899px) {
+    .word-list-panel {
+        max-width: 94vw;
+    }
 }
 
 .word-list-panel .title {
@@ -181,19 +197,22 @@ button.option.active {
 
 /* A length with a lot of words (usually 3s and 4s) would otherwise run
    taller than the board -- once a list's natural height passes the
-   budget, it switches to this side-by-side sub-column flow instead of
-   growing further down. Column count and the element's own width are both
-   computed and set explicitly in JS (see renderWordColumns in
-   boggle-shared.js) rather than left to column-width auto-count: a
-   multi-column element's *intrinsic* width isn't reliably computed by
-   browsers when it's sizing a shrink-to-fit flex item (it collapses to
-   one column's width, clipping the rest), so the width needs to be handed
-   to it directly. */
-.word-list.multi-col {
-    column-gap: 16px;
-    column-fill: auto;
+   budget, it switches to this side-by-side row of independent lists
+   instead of growing further down. Word count per list (and how many
+   lists) is decided in JS (see renderWordColumns in boggle-shared.js),
+   which also caps the number of lists to however many fit the screen's
+   width -- each list here just gets a fixed width so that cap actually
+   holds. (An earlier version used CSS column-count on one list instead;
+   that's simpler, but a multi-column box is free to add an extra column of
+   its own when the content doesn't divide evenly into the given height,
+   which pushed the layout past its intended width -- off the edge of the
+   screen on a narrow phone.) */
+.word-sublists {
+    display: flex;
+    gap: 16px;
 }
 
-.word-list.multi-col li {
-    break-inside: avoid-column;
+.word-sublists .word-list {
+    width: 84px;
+    flex: 0 0 auto;
 }

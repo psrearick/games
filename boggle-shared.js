@@ -176,6 +176,21 @@ function wordListHeightBudget() {
 const SUB_COLUMN_WIDTH = 84;
 const SUB_COLUMN_GAP = 16;
 
+// The widest a single length's sub-column layout is ever allowed to grow,
+// derived from the same viewport-relative cap .word-list-panel uses (see
+// boggle-shared.css -- 94vw below 900px, 66vw above it). Without this, a
+// word-rich length (lots of 3- or 4-letter words) would keep adding columns
+// sideways with no limit, running the panel's background box past its own
+// max-width and off the edge of the screen -- horizontal scrolling, which
+// this site never wants. Capping the column count means a word-rich length
+// instead grows *taller* (more rows within the same columns), which the
+// page is already allowed to scroll to see.
+function maxSubColumns() {
+    const widthFraction = window.innerWidth < 900 ? 0.94 : 0.66;
+    const availableWidth = Math.min(widthFraction * window.innerWidth, 1400) - 40;
+    return Math.max(1, Math.floor((availableWidth + SUB_COLUMN_GAP) / (SUB_COLUMN_WIDTH + SUB_COLUMN_GAP)));
+}
+
 // Renders every word in allWordsSet into `container`, one column per
 // length, with each column's header held to a shared top row via
 // flex-wrap (see .word-columns in boggle-shared.css). A length whose list
@@ -197,6 +212,19 @@ function renderWordColumns(container, allWordsSet, { formatWord, foundSet } = {}
 
     container.innerHTML = '';
     const budget = wordListHeightBudget();
+    const maxCols = maxSubColumns();
+
+    function buildList(words) {
+        const ul = document.createElement('ul');
+        ul.className = 'word-list';
+        words.forEach(w => {
+            const li = document.createElement('li');
+            li.textContent = format(w);
+            if (foundSet && foundSet.has(w)) li.classList.add('found');
+            ul.appendChild(li);
+        });
+        return ul;
+    }
 
     [...byLength.keys()].sort((a, b) => a - b).forEach(len => {
         const col = document.createElement('div');
@@ -207,29 +235,40 @@ function renderWordColumns(container, allWordsSet, { formatWord, foundSet } = {}
         header.textContent = len + ' letters';
         col.appendChild(header);
 
-        const ul = document.createElement('ul');
-        ul.className = 'word-list';
-        byLength.get(len).forEach(w => {
-            const li = document.createElement('li');
-            li.textContent = format(w);
-            if (foundSet && foundSet.has(w)) li.classList.add('found');
-            ul.appendChild(li);
-        });
+        const words = byLength.get(len);
+        const ul = buildList(words);
         col.appendChild(ul);
         container.appendChild(col);
 
-        // Measured after attaching, in its natural single-column height,
-        // so a short list never pays for space it doesn't need -- only a
-        // list taller than the budget switches to sub-columns. Column
-        // count is however many are needed to bring it back within the
-        // budget, and the element's width is set explicitly to match (see
-        // SUB_COLUMN_WIDTH note above .word-list.multi-col).
-        if (ul.offsetHeight > budget) {
-            const cols = Math.ceil(ul.offsetHeight / budget);
-            ul.classList.add('multi-col');
-            ul.style.height = budget + 'px';
-            ul.style.columnCount = cols;
-            ul.style.width = (cols * SUB_COLUMN_WIDTH + (cols - 1) * SUB_COLUMN_GAP) + 'px';
+        // Measured after attaching, in its natural single-column height, so
+        // a short list never pays for space it doesn't need -- only a list
+        // taller than the budget switches to side-by-side sub-lists.
+        // Column count is however many are needed to bring it back within
+        // the budget, capped at however many actually fit the screen's
+        // width (maxCols) -- past that cap, the sub-lists just grow taller
+        // instead of the layout growing wider than the viewport. On a
+        // screen too narrow to fit even a second column, skip sub-lists
+        // entirely and leave it as one (possibly tall) column; the page can
+        // already scroll vertically to see the rest.
+        //
+        // Words are split by count into evenly-sized, independent <ul>s
+        // rather than using CSS column-count on one <ul> -- a CSS multi-col
+        // box is free to add an extra column of its own if the content
+        // doesn't divide evenly into the given height (rounding, line-height
+        // slop), which silently pushed columns past the width set below and
+        // off the edge of the screen. Splitting the words ourselves fixes
+        // the column count exactly, so the total width can never exceed
+        // what was budgeted for it.
+        if (ul.offsetHeight > budget && maxCols > 1) {
+            const idealCols = Math.ceil(ul.offsetHeight / budget);
+            const cols = Math.min(idealCols, maxCols);
+            const perCol = Math.ceil(words.length / cols);
+            const sublists = document.createElement('div');
+            sublists.className = 'word-sublists';
+            for (let i = 0; i < words.length; i += perCol) {
+                sublists.appendChild(buildList(words.slice(i, i + perCol)));
+            }
+            col.replaceChild(sublists, ul);
         }
     });
 

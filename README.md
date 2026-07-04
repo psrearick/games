@@ -39,11 +39,13 @@ Then open `http://localhost:8123`.
 
 ```
 index.html            Landing page linking to all games
+about.html             About page (site's story + support link)
 boggle.html            Boggle (dynamic board + dictionary)
 boggle-static.html     Boggle (static/simplified variant)
 yahtzee.html            Yahtzee scorecard
 yahtzee-roller.html    Standalone dice roller
-shared.css             Shared color tokens, reset, and reusable components (buttons, button bar, setup panel, etc.)
+shared.css             Shared color tokens, reset, and reusable components (buttons, button bar, footer, setup panel, etc.)
+theme.js                Footer dark/light theme toggle (persisted in localStorage)
 words.js / words.txt    Word list used for Boggle validation
 manifest.json          PWA manifest
 sw.js                  Service worker (network-first, offline fallback cache)

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script>
+        if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="icon-512x512.png">
+    <link rel="stylesheet" href="shared.css">
+    <title>About</title>
+    <style>
+        .about-content {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(12px, 2vmin, 20px);
+            width: min(94vw, 640px);
+        }
+
+        .about-content p {
+            color: var(--ink);
+            font-size: clamp(14px, 1.8vmin, 18px);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body class="scrollable">
+
+    <div class="button-bar">
+        <div class="left">
+            <a href="index.html"><button>Home</button></a>
+        </div>
+    </div>
+
+    <div class="heading">About</div>
+
+    <div class="about-content">
+        <p>These are quiet games.</p>
+
+        <p>I have chronic migraine, and my mom has vertigo. Between the two of us, most tabletop games and most apps are off the table. The motion, the flashing, the transitions, the noise, the sheer amount of stuff moving on screen, any of these can set off a migraine or a vertigo episode. We wanted something simple to play together that wouldn't cost us the rest of the day. I couldn't find it, so I built it.</p>
+
+        <p>Everything here is made to be gentle on sensitive eyes and heads. Low contrast, no flashing, no animation to speak of, no autoplay, minimal motion, and as little visual clutter as I could manage. The idea is that you can sit down and play without bracing for discomfort.</p>
+
+        <p>Right now it's a small collection and I add to it when I can. It's free, and it will stay free. If it helps you and you feel like helping keep it running, there's a Ko-fi link in the footer. If not, that's completely fine. Mostly I just hope it's useful to someone else who needed screens to be less stimulating.</p>
+    </div>
+
+    <footer class="site-footer">
+        <a href="about.html">About</a>
+        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support me on Ko-fi</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light theme</button>
+    </footer>
+
+    <script src="theme.js"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js");
+            });
+        }
+    </script>
+</body>
+
+</html>

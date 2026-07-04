@@ -15,6 +15,25 @@
     --warn: oklch(0.66 0.06 55);
 }
 
+/* Muted light theme, opted into via the footer toggle (persisted in
+   localStorage, applied early in <head> to avoid a flash of the wrong
+   theme). Only the base tokens are overridden -- --die-kept, --die-border,
+   --die-shadow, --btn, and --btn-press are all defined in terms of --die/--bg
+   via oklch(from ...) above, so they recompute automatically. The one
+   exception is --die-kept, which normally lightens the die to stand out
+   against a dark background; near the top of the lightness range that
+   would wash out against the light background instead, so it's flipped to
+   darken. */
+:root[data-theme="light"] {
+    --bg: oklch(0.95 0.006 253.99);
+    --die: oklch(0.86 0.01 252.26);
+    --die-kept: oklch(from var(--die) calc(l - 0.10) c h);
+    --ink: oklch(0.34 0.01 247.86);
+    --bar: oklch(0.42 0.05 248.57);
+    --accent: oklch(0.50 0.10 248.57);
+    --warn: oklch(0.55 0.07 55);
+}
+
 *,
 *::before,
 *::after {
@@ -48,12 +67,22 @@ body {
 
 /* For pages whose content can grow past the viewport (a scorecard, a word
    list) -- content starts below the fixed button bar instead of centering,
-   and the page is allowed to scroll instead of clipping. */
+   and the page is allowed to scroll instead of clipping. "safe center"
+   keeps short content (e.g. an empty setup screen) looking balanced in the
+   middle of the viewport like the non-scrollable default, but falls back
+   to top-aligned the moment content is too tall to center without clipping
+   the top of it above the fixed button bar. */
 body.scrollable {
-    justify-content: flex-start;
+    justify-content: safe center;
     gap: clamp(12px, 2.2vmin, 26px);
     padding-top: clamp(64px, 10vmin, 96px);
-    overflow: visible;
+    padding-bottom: clamp(48px, 7vmin, 72px);
+    /* Vertical growth is fine and expected here (a scorecard, a word list);
+       horizontal growth never is -- pages should never gain a sideways
+       scrollbar, so that axis stays clipped even where content is allowed
+       to grow taller than the viewport. */
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .hidden {
@@ -69,6 +98,27 @@ body.scrollable {
     left: 0;
     padding: 1rem;
     z-index: 2;
+    /* Solid, same as the page background -- see .site-footer for why: on a
+       page taller than the viewport, this fixed bar sits over whatever's
+       scrolled up beneath it, and without an opaque background that
+       content showed through and tangled visually with the buttons. */
+    background: var(--bg);
+    border-bottom: 1px solid var(--die-border);
+}
+
+/* A page with three button-bar buttons at once (Home, End Game, New Game --
+   see boggle.html/yahtzee.html mid-game) can be a few pixels too wide for
+   the narrowest phones at the button's normal minimum size, which used to
+   force a label to wrap onto a second line. Shrinking a little further
+   here keeps every label on one line instead, without needing to wrap the
+   whole bar onto two rows (which would eat into the space reserved above
+   it for the fixed bar -- see body.scrollable). */
+@media (max-width: 360px) {
+    .button-bar button {
+        padding-left: clamp(8px, 2vmin, 18px);
+        padding-right: clamp(8px, 2vmin, 18px);
+        font-size: clamp(11px, 1.9vmin, 20px);
+    }
 }
 
 .button-bar .left,
@@ -102,6 +152,12 @@ button {
     border-radius: clamp(4px, 0.7vmin, 9px);
     cursor: pointer;
     letter-spacing: 0.06em;
+    /* A button's label should never break onto a second line -- on a
+       narrow phone with three button-bar buttons ("Home", "End Game",
+       "New Game"), that mid-word wrap made the bar noticeably (and
+       unevenly) taller. See the narrow-width rule below, which shrinks
+       button-bar buttons instead so all three still fit on one line. */
+    white-space: nowrap;
 }
 
 button:active {
@@ -121,6 +177,61 @@ input[type="text"] {
     color: var(--ink);
     border: 2px solid var(--die-border);
     border-radius: clamp(4px, 0.7vmin, 9px);
+}
+
+/* ---- Site footer (About + support link, shown on every page) ---- */
+.site-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    gap: clamp(16px, 3vmin, 32px);
+    padding: 0.85rem 1rem;
+    z-index: 2;
+    /* Solid, same as the page background -- on a page whose content grows
+       taller than the viewport (a long word list), this fixed bar sits
+       over whatever's scrolled beneath it. Without an opaque background,
+       that content showed through and visually tangled with the footer
+       links. */
+    background: var(--bg);
+    border-top: 1px solid var(--die-border);
+}
+
+.site-footer a,
+.theme-toggle {
+    color: var(--ink);
+    opacity: 0.65;
+    font-size: clamp(11px, 1.5vmin, 14px);
+    letter-spacing: 0.04em;
+    text-decoration: none;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible,
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+    opacity: 1;
+}
+
+/* Tucked at the right edge, away from the About/Ko-fi links, so it reads
+   as a quiet utility control rather than another call-to-action. */
+.theme-toggle {
+    position: absolute;
+    top: 50%;
+    right: clamp(12px, 2vw, 24px);
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    border-radius: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.theme-toggle:active {
+    background: none;
 }
 
 /* ---- Setup panel (used by any game with a pre-game options screen) ---- */
