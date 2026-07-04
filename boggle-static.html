@@ -11,7 +11,17 @@
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="boggle-shared.css">
-    <title>Boggle</title>
+    <title>Boggle (Static) – Quiet Games</title>
+    <meta name="description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <meta property="og:site_name" content="Quiet Games">
+    <meta property="og:title" content="Boggle (Static) – Quiet Games">
+    <meta property="og:description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/icon-512x512.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Boggle (Static) – Quiet Games">
+    <meta name="twitter:description" content="A shared-screen Boggle board for group play -- big letters, an optional visual timer, and a full word reveal at the end. No typing required.">
+    <meta name="twitter:image" content="/icon-512x512.png">
     <style>
         /* ---- Game screen ---- */
         #game {
@@ -73,6 +83,20 @@
 
     <!-- Setup screen -->
     <div class="setup" id="setup">
+        <div class="heading">Boggle (Static)</div>
+
+        <details class="rules">
+            <summary>How to Play</summary>
+            <div class="rules-content">
+                <ul>
+                    <li>Built for a shared screen -- everyone plays from the same board at once.</li>
+                    <li>Find words out loud or on paper; there's no on-screen word entry.</li>
+                    <li>Words must be at least 3 letters. "Qu" counts as a single letter.</li>
+                    <li>When time runs out (or you press End Game in Untimed mode), every possible word on the board is revealed.</li>
+                </ul>
+            </div>
+        </details>
+
         <div class="setup-row">
             <div class="label">Board Size</div>
             <div class="option-group" id="size-options">
@@ -80,17 +104,23 @@
                 <button class="option" data-size="5">Big 5x5</button>
             </div>
         </div>
-        <div class="setup-row">
+        <div class="setup-row" id="time-limit-row">
             <div class="label">Time Limit</div>
             <div class="option-group" id="time-options">
                 <button class="option" data-minutes="1">1 min</button>
                 <button class="option" data-minutes="2">2 min</button>
                 <button class="option" data-minutes="3">3 min</button>
                 <button class="option" data-minutes="5">5 min</button>
-                <button class="option" data-minutes="0">Untimed</button>
             </div>
         </div>
         <div class="setup-row">
+            <div class="label">Untimed</div>
+            <div class="option-group" id="untimed-options">
+                <button class="option" data-untimed="0">Off</button>
+                <button class="option" data-untimed="1">On</button>
+            </div>
+        </div>
+        <div class="setup-row" id="visual-timer-row">
             <div class="label">Visual Timer</div>
             <div class="option-group" id="visual-timer-options">
                 <button class="option" data-visible="1">Yes</button>
@@ -128,7 +158,10 @@
 
         const sizeOptionsEl = document.getElementById('size-options');
         const timeOptionsEl = document.getElementById('time-options');
+        const timeLimitRowEl = document.getElementById('time-limit-row');
+        const untimedOptionsEl = document.getElementById('untimed-options');
         const visualTimerOptionsEl = document.getElementById('visual-timer-options');
+        const visualTimerRowEl = document.getElementById('visual-timer-row');
         const startBtn = document.getElementById('start-btn');
         // const dictionaryStatusEl = document.getElementById('dictionary-status');
 
@@ -148,6 +181,7 @@
         const params = new URLSearchParams(window.location.search);
         let boardSize = params.get('size') === '5' ? 5 : 4;
         let timeLimitMinutes = 3;
+        let untimedOn = false;
         let visualTimerOn = true;
 
         function refreshOptionButtons(group, matchAttr, matchValue) {
@@ -158,6 +192,7 @@
 
         refreshOptionButtons(sizeOptionsEl, 'size', boardSize);
         refreshOptionButtons(timeOptionsEl, 'minutes', timeLimitMinutes);
+        refreshOptionButtons(untimedOptionsEl, 'untimed', 0);
         refreshOptionButtons(visualTimerOptionsEl, 'visible', visualTimerOn ? 1 : 0);
 
         sizeOptionsEl.addEventListener('click', (e) => {
@@ -172,6 +207,15 @@
             if (!btn) return;
             timeLimitMinutes = Number(btn.dataset.minutes);
             refreshOptionButtons(timeOptionsEl, 'minutes', timeLimitMinutes);
+        });
+
+        untimedOptionsEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            untimedOn = btn.dataset.untimed === '1';
+            refreshOptionButtons(untimedOptionsEl, 'untimed', untimedOn ? 1 : 0);
+            timeLimitRowEl.classList.toggle('disabled', untimedOn);
+            visualTimerRowEl.classList.toggle('disabled', untimedOn);
         });
 
         visualTimerOptionsEl.addEventListener('click', (e) => {
@@ -237,6 +281,7 @@
         // ================= Game flow =================
 
         function startGame() {
+            const minutes = untimedOn ? 0 : timeLimitMinutes;
             buildBoard(boardSize);
             renderGrid();
             gameEl.classList.remove('with-list');
@@ -254,14 +299,14 @@
             gameActive = true;
             clearInterval(timerInterval);
 
-            if (timeLimitMinutes > 0 && visualTimerOn) {
+            if (minutes > 0 && visualTimerOn) {
                 timerBarWrapEl.classList.remove('hidden');
             } else {
                 timerBarWrapEl.classList.add('hidden');
             }
 
-            if (timeLimitMinutes > 0) {
-                startTimer(timeLimitMinutes);
+            if (minutes > 0) {
+                startTimer(minutes);
             }
         }
 

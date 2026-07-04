@@ -252,6 +252,66 @@ input:focus-visible {
     background: none;
 }
 
+/* ---- Rules disclosure ("How to Play"), used on every game's setup
+   screen. A native <details>/<summary> instead of a JS-driven modal --
+   open/close is instant (nothing here fights the global animation/
+   transition reset above), and it needs no script of its own. Sized to
+   match .setup's width so it lines up whether it's nested inside that
+   panel (Boggle, Yahtzee) or sitting alone in the page flow (the dice-only
+   Yahtzee roller, which has no .setup panel at all). ---- */
+.rules {
+    width: 100%;
+    max-width: min(94vw, 460px);
+}
+
+.rules summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--ink);
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    font-size: clamp(13px, 1.8vmin, 17px);
+    user-select: none;
+}
+
+/* display: flex above already drops the native marker in current
+   browsers (it only renders for display: list-item); this covers older
+   WebKit, which shows its own marker regardless of display. The
+   caret-via-::before below is the one marker that's actually meant to
+   show. */
+.rules summary::-webkit-details-marker {
+    display: none;
+}
+
+.rules summary::before {
+    content: '▸';
+    color: var(--bar);
+    font-size: 0.85em;
+}
+
+.rules[open] summary::before {
+    content: '▾';
+}
+
+.rules-content {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--ink);
+    font-size: clamp(12px, 1.6vmin, 15px);
+    line-height: 1.5;
+}
+
+.rules-content ul {
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 /* ---- Setup panel (used by any game with a pre-game options screen) ---- */
 .setup {
     display: flex;

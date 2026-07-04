@@ -10,7 +10,17 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
-    <title>Yahtzee Dice</title>
+    <title>Yahtzee – Quiet Games</title>
+    <meta name="description" content="A full Yahtzee scorecard for 1-8 players, including the upper-section bonus and Joker rules, in a calm, low-contrast design.">
+    <meta property="og:site_name" content="Quiet Games">
+    <meta property="og:title" content="Yahtzee – Quiet Games">
+    <meta property="og:description" content="A full Yahtzee scorecard for 1-8 players, including the upper-section bonus and Joker rules, in a calm, low-contrast design.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/icon-512x512.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Yahtzee – Quiet Games">
+    <meta name="twitter:description" content="A full Yahtzee scorecard for 1-8 players, including the upper-section bonus and Joker rules, in a calm, low-contrast design.">
+    <meta name="twitter:image" content="/icon-512x512.png">
     <style>
         /* shared.css only sets a min-height on body, which is right for
            other games (Boggle intentionally grows taller than the viewport
@@ -237,6 +247,22 @@
 
     <!-- Player setup -->
     <div class="setup" id="setup">
+        <div class="heading">Yahtzee</div>
+
+        <details class="rules">
+            <summary>How to Play</summary>
+            <div class="rules-content">
+                <ul>
+                    <li>On your turn, roll up to 3 times, keeping any dice you want between rolls.</li>
+                    <li>After your last roll, pick one open category to score it -- tap a highlighted cell.</li>
+                    <li>Upper section (Ones&ndash;Sixes): score is the sum of matching dice. 63+ total across those six earns a 35-point bonus.</li>
+                    <li>Lower section: 3/4 of a Kind (sum of all dice), Full House (25), Small Straight (30), Large Straight (40), Yahtzee (50), Chance (sum of all dice).</li>
+                    <li>An extra Yahtzee after your first one earns a 100-point bonus (Joker rules apply to the rest of your scorecard).</li>
+                    <li>The game ends once every category is filled for all players &mdash; highest total wins.</li>
+                </ul>
+            </div>
+        </details>
+
         <div class="status">Set Up Players</div>
         <div class="setup-row">
             <label id="playerCountLabel">Number of Players</label>

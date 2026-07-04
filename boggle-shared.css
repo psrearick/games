@@ -28,6 +28,15 @@ button.option.active {
     font-size: clamp(13px, 1.8vmin, 17px);
 }
 
+/* Dims a row whose choice no longer matters -- e.g. Time Limit and Visual
+   Timer once Untimed is switched on -- rather than hiding it outright, so
+   the previously-picked value is still visible (just inert) if Untimed is
+   switched off again. */
+.setup-row.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
 .option-group {
     display: flex;
     gap: 10px;

@@ -11,47 +11,104 @@
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
     <meta name="theme-color" content="#2c3035">
-    <title>Games</title>
+    <title>Quiet Games</title>
+    <meta name="description" content="Quiet Games is a small collection of low-contrast, no-flash, no-motion web games -- Boggle and Yahtzee so far. Built to be gentle on migraines, vertigo, and sensitive eyes. Free, and installable offline.">
+    <meta property="og:site_name" content="Quiet Games">
+    <meta property="og:title" content="Quiet Games">
+    <meta property="og:description" content="A small collection of low-contrast, no-flash, no-motion web games. Built to be gentle on migraines, vertigo, and sensitive eyes. Free, and installable offline.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/icon-512x512.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Quiet Games">
+    <meta name="twitter:description" content="A small collection of low-contrast, no-flash, no-motion web games. Built to be gentle on migraines, vertigo, and sensitive eyes. Free, and installable offline.">
+    <meta name="twitter:image" content="/icon-512x512.png">
     <style>
-        .gameList {
+        .intro {
+            width: min(94vw, 640px);
+            text-align: center;
+        }
+
+        .intro p {
+            color: var(--ink);
+            line-height: 1.6;
+        }
+
+        .intro a {
+            color: var(--bar);
+        }
+
+        .game-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: clamp(16px, 3vmin, 32px);
+            width: min(94vw, 900px);
+        }
+
+        .game-card {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: clamp(12px, 2.4vmin, 28px);
+            gap: 12px;
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: 10px;
+            padding: clamp(20px, 3vmin, 32px);
+            flex: 1 1 260px;
+            max-width: 340px;
         }
 
-        .gameList p {
+        .game-card-title {
             color: var(--bar);
-            text-align: center;
+            font-size: clamp(18px, 2.2vmin, 24px);
+            font-weight: bold;
+            letter-spacing: 0.06em;
+        }
 
+        .game-card-desc {
+            color: var(--ink);
+            text-align: center;
+            font-size: clamp(13px, 1.6vmin, 15px);
+            line-height: 1.5;
+        }
+
+        .game-card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .game-card-actions button {
+            width: 100%;
         }
     </style>
 </head>
 
-<body>
+<body class="scrollable">
 
-    <div class="heading" id="heading">Games</div>
+    <div class="heading">Quiet Games</div>
 
-    <div class="row" id="row"></div>
+    <div class="intro">
+        <p>A small collection of quiet games. Low contrast, no motion, built to be gentle on sensitive eyes and heads. <a href="about.html">Read why</a>.</p>
+    </div>
 
-    <div class="controls">
-        <div class="gameList">
-            <p>Boggle</p>
-            <a href="boggle.html">
-                <button>Boggle</button>
-            </a>
-            <a href="boggle-static.html">
-                <button>Boggle (Static)</button>
-            </a>
+    <div class="game-grid">
+        <div class="game-card">
+            <div class="game-card-title">Boggle</div>
+            <p class="game-card-desc">A shuffled 4&times;4 or 5&times;5 letter grid. Find words before time runs out.</p>
+            <div class="game-card-actions">
+                <a href="boggle.html"><button>Boggle</button></a>
+                <a href="boggle-static.html"><button>Boggle (Static)</button></a>
+            </div>
         </div>
-        <div class="gameList">
-            <p>Yahtzee</p>
-            <a href="yahtzee.html">
-                <button>Yahtzee</button>
-            </a>
-            <a href="yahtzee-roller.html">
-                <button>Yahtzee Dice Roller</button>
-            </a>
+        <div class="game-card">
+            <div class="game-card-title">Yahtzee</div>
+            <p class="game-card-desc">A full scorecard for 1&ndash;8 players, or just the dice if you're keeping score by hand.</p>
+            <div class="game-card-actions">
+                <a href="yahtzee.html"><button>Yahtzee</button></a>
+                <a href="yahtzee-roller.html"><button>Yahtzee Dice Roller</button></a>
+            </div>
         </div>
     </div>
 
