@@ -1,10 +1,10 @@
 (function () {
-    var STORAGE_KEY = 'theme';
-    var toggle = document.getElementById('theme-toggle');
+    let STORAGE_KEY = 'theme';
+    let toggle = document.getElementById('theme-toggle');
     if (!toggle) return;
 
-    var meta = document.querySelector('meta[name="theme-color"]');
-    var current = localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark';
+    let meta = document.querySelector('meta[name="theme-color"]');
+    let current = localStorage.getItem(STORAGE_KEY) === 'light' ? 'light' : 'dark';
 
     function apply(theme) {
         if (theme === 'light') {

@@ -2,7 +2,7 @@
 
 A small collection of single-page, no-build web games, designed to be gentle on the eyes.
 
-Each game is a self-contained HTML file with no external dependencies or backend — open it in a browser and play. The whole thing is also installable as a PWA (Progressive Web App) so it works offline and can be added to a home screen.
+Each game is a self-contained HTML file with no external dependencies or backend — open it in a browser and play. The whole thing is also installable as a PWA (Progressive Web App), so it works offline and can be added to a home screen.
 
 ## Why this exists
 
@@ -16,12 +16,12 @@ If you're adding a new game to this repo, keep those constraints in mind — see
 
 ## Games
 
-| Game | File | Description |
-|---|---|---|
-| Boggle | [boggle.html](boggle.html) | Classic Boggle — a randomly generated letter grid, timer, and word validation against a large dictionary ([words.js](words.js)). |
-| Boggle (Static) | [boggle-static.html](boggle-static.html) | A lightweight variant with a fixed/simpler board, no dictionary lookup. |
-| Yahtzee | [yahtzee.html](yahtzee.html) | Full Yahtzee scorecard for one or more players, including upper-section bonus and joker rules. |
-| Yahtzee Dice Roller | [yahtzee-roller.html](yahtzee-roller.html) | Just the dice — roll and hold dice without tracking a scorecard. |
+| Game                | File                                       | Description                                                                                                                      |
+|---------------------|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| Boggle              | [boggle.html](boggle.html)                 | Classic Boggle — a randomly generated 4×4 or 5×5 letter grid, timer, interactive word entry, and validation against a large dictionary ([words.js](words.js)). |
+| Boggle (Static)     | [boggle-static.html](boggle-static.html)   | A display-only variant for group play — shows the board and an optional visual timer bar; reveals all possible words when time's up. No interactive word entry. |
+| Yahtzee             | [yahtzee.html](yahtzee.html)               | Full Yahtzee scorecard for one or more players, including upper-section bonus and joker rules.                                   |
+| Yahtzee Dice Roller | [yahtzee-roller.html](yahtzee-roller.html) | Just the dice — roll and hold dice without tracking a scorecard.                                                                 |
 
 More games will be added over time; new entries should be linked from [index.html](index.html) as well as this table.
 
@@ -39,24 +39,26 @@ Then open `http://localhost:8123`.
 
 ```
 index.html            Landing page linking to all games
-about.html             About page (site's story + support link)
-boggle.html            Boggle (dynamic board + dictionary)
-boggle-static.html     Boggle (static/simplified variant)
-yahtzee.html            Yahtzee scorecard
-yahtzee-roller.html    Standalone dice roller
-shared.css             Shared color tokens, reset, and reusable components (buttons, button bar, footer, setup panel, etc.)
-theme.js                Footer dark/light theme toggle (persisted in localStorage)
-words.js / words.txt    Word list used for Boggle validation
-manifest.json          PWA manifest
-sw.js                  Service worker (network-first, offline fallback cache)
+about.html            About page (site's story + support link)
+boggle.html           Boggle (interactive: word entry, scoring, post-game solver)
+boggle-static.html    Boggle (display-only: board + visual timer for group play)
+boggle-shared.js      Shared Boggle logic: dice sets, board generation, solver, word-list rendering
+boggle-shared.css     Shared Boggle styles: grid, word list, board layout
+yahtzee.html          Yahtzee scorecard
+yahtzee-roller.html   Standalone dice roller
+shared.css            Shared color tokens, reset, and reusable components (buttons, button bar, footer, setup panel, etc.)
+theme.js              Dark/light theme toggle (persisted in localStorage)
+words.js / words.txt  Word list used for Boggle validation
+manifest.json         PWA manifest
+sw.js                 Service worker (network-first, offline fallback cache)
 ```
 
 ## Design guidelines
 
 When adding or editing a game, stay consistent with the rest of the repo:
 
-- Link [shared.css](shared.css) from `<head>` (`<link rel="stylesheet" href="shared.css">`) instead of redefining colors, the reset, or common components. It already provides the `:root` color tokens, the animation/transition reset, `body`/`body.scrollable`, `button`, `.button-bar` (with `.left`/`.right` wrapper divs), `.controls`, `.setup`, `.status`/`.heading`, and text `input` styling. Only put page-specific CSS (the board, dice, scorecard, etc.) in the page's own `<style>` block.
+- Link [shared.css](shared.css) from `<head>` (`<link rel="stylesheet" href="shared.css">`) instead of redefining colors, the reset, or common components. It already provides the `:root` color tokens, the animation/transition reset, `body`/`body.scrollable`, `button`, `.button-bar` (with `.left`/`.right` wrapper divs), `.controls`, `.setup`, `.status`/`.heading`, and text `input` styling. Only put page-specific CSS (the board, dice, scorecard, etc.) in the page's own `<style>` block. Boggle pages also link [boggle-shared.css](boggle-shared.css) for the grid, word list, and board-area layout, and load [boggle-shared.js](boggle-shared.js) for dice sets, board generation, the solver, and word-list rendering.
 - If a game needs new colors, add them as `oklch(...)` custom properties to `shared.css`'s `:root`, and derive related shades with `oklch(from var(--x) ...)` rather than hardcoding new hex colors or redefining tokens locally.
-- Keep contrast low — avoid pure white text on pure black, or highly saturated accent colors.
-- No flashing, blinking, or auto-playing motion of any kind (the global animation/transition reset in `shared.css` enforces this).
-- Each game should remain a single, dependency-free HTML file (aside from the shared `shared.css`/`words.js`) so it keeps working offline via the service worker — and if you add a new page, add it to `PRECACHE_URLS` in [sw.js](sw.js) so it's available offline immediately, not just after a first online visit.
+- Keep the contrast low — avoid pure white text on pure black, or highly saturated accent colors.
+- No flashing, blinking, or autoplaying motion of any kind (the global animation/transition reset in `shared.css` enforces this).
+- Each game should remain a single HTML file with minimal dependencies (at most the shared `shared.css`, `theme.js`, and any shared JS/CSS specific to that game family, like `boggle-shared.js`/`boggle-shared.css`) so it keeps working offline via the service worker. If you add a new page or shared file, add it to `PRECACHE_URLS` in [sw.js](sw.js) so it's available offline immediately, not just after a first online visit.

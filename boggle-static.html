@@ -98,7 +98,7 @@
             </div>
         </div>
         <button id="start-btn" disabled>Start Game</button>
-        <div class="dictionary-status" id="dictionary-status">Loading dictionary…</div>
+<!--        <div class="dictionary-status" id="dictionary-status">Loading dictionary…</div>-->
     </div>
 
     <!-- Game screen -->
@@ -130,7 +130,7 @@
         const timeOptionsEl = document.getElementById('time-options');
         const visualTimerOptionsEl = document.getElementById('visual-timer-options');
         const startBtn = document.getElementById('start-btn');
-        const dictionaryStatusEl = document.getElementById('dictionary-status');
+        // const dictionaryStatusEl = document.getElementById('dictionary-status');
 
         const endGameBtn = document.getElementById('end-game-btn');
         const newGameBtn = document.getElementById('new-game-btn');
@@ -306,7 +306,7 @@
         // "Loading dictionary…" message is visible during the (brief) delay.
         setTimeout(() => {
             TRIE = buildDictionary().trie;
-            dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
+            // dictionaryStatusEl.textContent = WORD_LIST.length.toLocaleString() + ' words loaded.';
             startBtn.disabled = false;
         }, 20);
     </script>

@@ -99,7 +99,7 @@ function buildBoardCells(size) {
 }
 
 // Builds the `.die` element (with its letter span) for one board cell.
-// Callers append any extra per-die UI (e.g. the interactive version's
+// Callers append any extra per-die UI (e.g., the interactive version's
 // order badge) themselves.
 function createDieElement(cell) {
     const dieEl = document.createElement('div');
@@ -288,7 +288,7 @@ function renderWordColumns(container, allWordsSet, { formatWord, foundSet } = {}
     return allWords.length;
 }
 
-// Body is non-scrolling by default (see shared.css) so the board and word
+// Body is non-scrolling by default (see shared.css), so the board and word
 // list normally fit on one screen without any UI chrome -- but an
 // unusually word-rich board can occasionally need more room than the
 // screen has. Rather than ever silently clipping an answer off the

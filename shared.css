@@ -88,7 +88,7 @@ body {
 body.scrollable {
     justify-content: safe center;
     gap: clamp(12px, 2.2vmin, 26px);
-    padding-top: clamp(64px, 10vmin, 96px);
+    padding-top: clamp(80px, 10vmin, 96px);
     padding-bottom: clamp(48px, 7vmin, 72px);
     /* Vertical growth is fine and expected here (a scorecard, a word list);
        horizontal growth never is -- pages should never gain a sideways
@@ -143,7 +143,7 @@ body.scrollable {
 .status,
 .heading {
     color: var(--bar);
-    font-size: clamp(16px, 2.6vmin, 30px);
+    font-size: clamp(20px, 2.6vmin, 30px);
     font-weight: bold;
     letter-spacing: 0.08em;
     user-select: none;
@@ -188,10 +188,14 @@ input[type="number"],
 input[type="text"] {
     padding: clamp(6px, 1vmin, 11px) clamp(10px, 1.6vmin, 16px);
     font-size: clamp(13px, 1.9vmin, 18px);
-    background: var(--die);
+    background: var(--btn);
     color: var(--ink);
     border: 2px solid var(--die-border);
     border-radius: clamp(4px, 0.7vmin, 9px);
+}
+
+input:focus-visible {
+    outline: none;
 }
 
 /* ---- Site footer (About + support link, shown on every page) ---- */
