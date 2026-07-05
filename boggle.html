@@ -207,19 +207,40 @@
            grid, and current-word controls stay put and visible, and
            #found-list (the one thing genuinely open-ended) gets a height
            floor so it shrinks to fit but never disappears.
-           Nothing here uses flex-grow, and nothing but #found-list uses
-           min-height — nowhere else in this chain is a real floor wanted,
-           only the ability to shrink, and giving an *intermediate*
-           container (e.g. .word-list-panel) its own min-height: 0 backfired:
-           it let the panel get shrunk smaller than #found-list's own floor
-           demanded, so the list overflowed past its own (too-small) parent
-           box instead of the parent growing to fit it. Leaving every
-           ancestor at the default automatic minimum lets that calculation
-           do its job — it already bottoms out correctly at #found-list's
-           explicit floor, recursively, without help. */
+           justify-content switches from body.scrollable's default "safe
+           center" to flex-start here -- centering is right for a short,
+           static setup screen, but during play #game's total height
+           changes on every word found (until #found-list is actually full
+           and scrolling), and "safe center" re-centers the *whole* block
+           on every single change, which continuously nudges the HUD and
+           grid up and down a few pixels each time -- a shift with no
+           actual size change behind it. Pinning to the top means adding a
+           word only ever affects space below the fixed HUD/grid, never
+           their position.
+           #game and #board-area get flex: 1; min-height: 0 so the
+           available height actually reaches #found-list to grow into
+           (see the portrait rule below) instead of #found-list being
+           capped at a guessed viewport fraction that had no relationship
+           to how much room the HUD and grid actually left over -- on a
+           lot of phones that guess was more generous than the real
+           leftover space, so #found-list would already be relying on
+           #game's own shrink long before its nominal cap, which is what
+           surfaced as this same push-everything-up-slightly behavior even
+           well short of a full list. min-height: 0 is what lets a flex
+           item shrink (or, here, size correctly) below its automatic
+           content-based minimum -- an *intermediate* container (e.g.
+           .word-list-panel) needs it applied explicitly for the constraint
+           to actually reach #found-list, rather than an ancestor's
+           automatic minimum silently winning instead. */
         @media (max-width: 899px) {
             body.scrollable.in-game {
                 height: 100dvh;
+                justify-content: flex-start;
+            }
+
+            body.scrollable.in-game #game {
+                flex: 1;
+                min-height: 0;
             }
 
             #game:not(.with-list) #found-list {
@@ -267,6 +288,13 @@
                 flex-wrap: nowrap;
                 align-items: center;
                 width: 100%;
+                /* Passes #game's fixed leftover height (see #game's own
+                   flex: 1; min-height: 0 above) down to .word-list-panel
+                   below, instead of #board-area just sizing to its
+                   content's natural (fully-grown) height and pushing the
+                   real constraint back onto #game/body. */
+                flex: 1;
+                min-height: 0;
             }
 
             #game:not(.with-list) #board-area .grid-stack {
@@ -276,6 +304,27 @@
             #game:not(.with-list) #board-area .word-list-panel {
                 width: 100%;
                 max-width: 100%;
+                /* Claims whatever height .grid-stack (fixed, flex: 0 0 auto
+                   above) doesn't need, so #found-list below actually gets
+                   the true leftover space to grow into -- see #found-list's
+                   own flex: 1; min-height: 0 override below, which replaces
+                   the old flat max-height guess entirely in this layout. */
+                flex: 1;
+                min-height: 0;
+            }
+
+            /* Fills whatever height .word-list-panel has left after its
+               title, and scrolls internally (overflow-y: auto, set
+               unconditionally further up) once even that's not enough --
+               replacing the old max-height: min(55vh, 480px) guess, which
+               had no actual relationship to how much room the HUD and grid
+               left over and was very often more generous than the real
+               leftover space. min-height keeps its existing floor so the
+               list never disappears entirely on a very short screen. */
+            #game:not(.with-list) #found-list {
+                flex: 1;
+                min-height: min(120px, 30vh);
+                max-height: none;
             }
 
             /* The post-game reveal stacks the same way -- #board-area's
