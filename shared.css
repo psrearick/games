@@ -89,7 +89,13 @@ body.scrollable {
     justify-content: safe center;
     gap: clamp(12px, 2.2vmin, 26px);
     padding-top: clamp(80px, 10vmin, 96px);
-    padding-bottom: clamp(48px, 7vmin, 72px);
+    /* env(safe-area-inset-bottom) is the iOS home-indicator strip when
+       installed as a standalone PWA (see viewport-fit=cover in <head>,
+       which is what makes the page's own background extend under it
+       instead of the OS showing a plain bar there) -- adding it here
+       keeps the footer clear of that strip instead of sitting flush
+       against it. Falls back to 0px on anything that doesn't support it. */
+    padding-bottom: calc(clamp(48px, 7vmin, 72px) + env(safe-area-inset-bottom, 0px));
     /* Vertical growth is fine and expected here (a scorecard, a word list);
        horizontal growth never is -- pages should never gain a sideways
        scrollbar, so that axis stays clipped even where content is allowed
@@ -109,7 +115,9 @@ body.scrollable {
     right: 0;
     top: 0;
     left: 0;
-    padding: 1rem;
+    /* The extra top padding clears the notch/Dynamic Island area the same
+       way .site-footer's bottom padding clears the home indicator. */
+    padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem 1rem;
     z-index: 2;
     /* Solid, same as the page background -- see .site-footer for why: on a
        page taller than the viewport, this fixed bar sits over whatever's
@@ -119,24 +127,37 @@ body.scrollable {
     border-bottom: 1px solid var(--die-border);
 }
 
-/* A page with four button-bar buttons at once (Home, Rules, End Game, New
-   Game -- see boggle.html/yahtzee.html mid-game, now that Rules joined the
-   bar too) can be too wide for a phone-width screen at the button's normal
-   minimum size, which would otherwise force a label to wrap onto a second
-   line. Shrinking a little further here keeps every label on one line
-   instead, without needing to wrap the whole bar onto two rows (which
-   would eat into the space reserved above it for the fixed bar -- see
-   body.scrollable). The breakpoint is wider than a single narrow phone
-   because four buttons need the help well before three did. */
-@media (max-width: 480px) {
+/* A page with three button-bar buttons at once (Home, End Game, New Game --
+   see boggle.html/yahtzee.html mid-game) can be a few pixels too wide for
+   the narrowest phones at the button's normal minimum size, which used to
+   force a label to wrap onto a second line. Shrinking a little further
+   here keeps every label on one line instead, without needing to wrap the
+   whole bar onto two rows (which would eat into the space reserved above
+   it for the fixed bar -- see body.scrollable). */
+@media (max-width: 360px) {
     .button-bar button {
+        padding-left: clamp(8px, 2vmin, 18px);
+        padding-right: clamp(8px, 2vmin, 18px);
+        font-size: clamp(11px, 1.9vmin, 20px);
+    }
+}
+
+/* Boggle's mid-game bar can reach four buttons at once (Home, Rules, End
+   Game, New Game). That's one more than the 360px rule above was ever
+   tuned for, and needs the help starting at a noticeably wider screen --
+   but only while there really are four of them. Scoped to a class toggled
+   in JS (updateButtonBarDensity()) rather than firing for every
+   button-bar on every page at this width, which shrank a lone Home button
+   (or Home + Rules) for no reason on almost every phone. */
+@media (max-width: 480px) {
+    .button-bar.many-buttons button {
         padding-left: clamp(6px, 1.6vmin, 18px);
         padding-right: clamp(6px, 1.6vmin, 18px);
         font-size: clamp(10px, 1.7vmin, 20px);
     }
 
-    .button-bar .left,
-    .button-bar .right {
+    .button-bar.many-buttons .left,
+    .button-bar.many-buttons .right {
         gap: 6px;
     }
 }
@@ -214,7 +235,12 @@ input:focus-visible {
     display: flex;
     justify-content: space-between;
     gap: clamp(16px, 3vmin, 32px);
-    padding: 0.85rem 1rem;
+    /* The extra bottom padding is the iOS home-indicator strip, present
+       when this is installed as a standalone PWA (see viewport-fit=cover
+       in <head>). Without it, the footer's About/Support/Theme buttons
+       sat flush against that strip -- easy to catch the indicator's own
+       swipe gesture instead of the button underneath it. */
+    padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px)) 1rem;
     z-index: 2;
     /* Solid, same as the page background -- on a page whose content grows
        taller than the viewport (a long word list), this fixed bar sits

@@ -6,7 +6,7 @@
     <script>
         if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
     </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="icon-512x512.png">
     <link rel="stylesheet" href="shared.css">
@@ -277,6 +277,37 @@
                 width: 100%;
                 max-width: 100%;
             }
+
+            /* The post-game reveal stacks the same way -- #board-area's
+               selector above is scoped to :not(.with-list), so without
+               this the reveal fell back to the base row+wrap layout
+               (boggle-shared.css) meant for sharing one row with the list
+               on a wider screen. #game.with-list .grid's shrink-and-slide
+               (also in boggle-shared.css) is for that same shared-row
+               case; stacked here, the grid isn't sharing a row with
+               anything, so it stays at its normal in-game size instead of
+               animating down to a width sized for sitting beside the
+               list. */
+            #game.with-list #board-area {
+                flex-direction: column;
+                flex-wrap: nowrap;
+                align-items: center;
+                width: 100%;
+            }
+
+            #game.with-list #board-area .grid-stack {
+                flex: 0 0 auto;
+            }
+
+            #game.with-list .grid {
+                width: 100% !important;
+                transition: none !important;
+            }
+
+            #game.with-list #board-area .word-list-panel {
+                width: 100%;
+                max-width: 100%;
+            }
         }
 
         /* Landscape: a short, wide phone doesn't have the height to stack
@@ -474,6 +505,17 @@
         const endGameBtn = document.getElementById('end-game-btn');
         const newGameBtn = document.getElementById('new-game-btn');
 
+        const buttonBarEl = document.querySelector('.button-bar');
+
+        // Toggles the compact button-bar sizing (see the .many-buttons
+        // media query in shared.css) only while there are actually enough
+        // visible buttons to need it, rather than shrinking every page's
+        // bar at this width regardless of how many buttons it has.
+        function updateButtonBarDensity() {
+            const visibleCount = buttonBarEl.querySelectorAll('button:not(.hidden)').length;
+            buttonBarEl.classList.toggle('many-buttons', visibleCount >= 4);
+        }
+
         const rulesBtn = document.getElementById('rules-btn');
         const rulesDialog = document.getElementById('rules-dialog');
         const rulesDialogClose = document.getElementById('rules-dialog-close');
@@ -561,7 +603,16 @@
         }
 
         function renderGrid() {
-            gridEl.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+            // minmax(0, 1fr), not plain 1fr -- a bare 1fr track won't
+            // shrink past its content's min-content width (here, a die's
+            // letter), so when the post-game reveal forces .grid down to
+            // min(38vw, 48vh) to share room with the word list (see
+            // #game.with-list .grid in boggle-shared.css), the letters
+            // could keep the grid from actually shrinking that far and it
+            // overflowed rightward past its own centered box instead --
+            // looking like the board had shifted right with the last
+            // column or two pushed off-screen.
+            gridEl.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, 1fr))`;
             gridEl.innerHTML = '';
             board.forEach(cell => {
                 const dieEl = createDieElement(cell);
@@ -954,8 +1005,19 @@
         // — and switches from a fixed viewport height to a natural,
         // scrollable one (see the .overflowing fallback rule above) so
         // nothing ends up permanently hidden behind the footer.
+        //
+        // A one-way latch: once a game has needed the fallback, it only
+        // ever adds more found words from there (never fewer), so it can
+        // never stop needing it before startGame() resets the latch for
+        // the next game. This used to remove the class and re-measure on
+        // every single word submitted, which forced a reflow from the
+        // fixed-height layout back to itself each time -- once a game was
+        // already in the fallback state, that briefly (and pointlessly)
+        // snapped the page back into the pinned layout on every word
+        // before immediately re-adding the fallback, which is what caused
+        // a visible jump each time a word was added.
         function checkInGameOverflow() {
-            document.body.classList.remove('overflowing');
+            if (document.body.classList.contains('overflowing')) return;
             if (document.documentElement.scrollHeight > window.innerHeight) {
                 document.body.classList.add('overflowing');
             }
@@ -977,12 +1039,17 @@
             gameEl.classList.remove('hidden');
             endGameBtn.classList.remove('hidden');
             newGameBtn.classList.remove('hidden');
+            updateButtonBarDensity();
             // Pins the in-game area to the viewport height on narrow screens
             // (see the max-width: 899px rules above) so the found-words list
             // is the only thing that scrolls — removed again in endGame()/
             // returnToSetup() since the post-game reveal is allowed to grow
             // and scroll the whole page instead.
             document.body.classList.add('in-game');
+            // Resets the one-way latch checkInGameOverflow() uses -- a
+            // fresh game hasn't earned the fallback yet regardless of
+            // whether the last one needed it.
+            document.body.classList.remove('overflowing');
             checkInGameOverflow();
 
             gameActive = true;
@@ -1001,6 +1068,7 @@
             // over the board scroll the page instead of being swallowed.
             gridEl.classList.add('inactive');
             endGameBtn.classList.add('hidden');
+            updateButtonBarDensity();
             statusLineEl.innerHTML = '&nbsp;';
 
             setTimeout(() => {
@@ -1032,6 +1100,7 @@
             gameEl.classList.add('hidden');
             endGameBtn.classList.add('hidden');
             newGameBtn.classList.add('hidden');
+            updateButtonBarDensity();
             setupEl.classList.remove('hidden');
         }
 
