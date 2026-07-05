@@ -187,7 +187,10 @@
            content is in it. */
         #found-list {
             display: flex;
-            gap: 16px;
+            /* Matches FOUND_COLUMN_GAP in the script below -- the column
+               count math there assumes this exact gap, so the two need to
+               stay in sync or the columns could overflow their budget. */
+            gap: 12px;
             max-height: min(55vh, 480px);
             overflow-y: auto;
             overflow-x: hidden;
@@ -199,6 +202,14 @@
            explicit width from being squeezed. */
         #found-list .word-list {
             flex: 0 0 auto;
+        }
+
+        /* Smaller than the shared .word-list li size (used for the
+           post-game reveal, which stays as-is) -- these words are
+           read-only while playing, not tap targets, so they can run a
+           little tighter to fit a third column on a typical phone. */
+        #found-list li {
+            font-size: clamp(11px, 1.6vmin, 14px);
         }
 
         /* Below the 900px breakpoint, pin the whole in-game area to the
@@ -236,6 +247,17 @@
             body.scrollable.in-game {
                 height: 100dvh;
                 justify-content: flex-start;
+                /* The grid and HUD should never scroll out of view during
+                   play -- #found-list is the one thing meant to absorb
+                   overflow (its own overflow-y: auto, above), so the page
+                   itself is never allowed to scroll here at all. Anything
+                   that still doesn't fit within 100dvh (HUD + grid +
+                   #found-list's own min-height floor, on an unusually short
+                   screen) gets clipped instead of spilling into a
+                   page-level scroll -- a deliberate trade, since the whole
+                   point is that the board stays put and only the found
+                   words scroll. */
+                overflow-y: hidden;
             }
 
             body.scrollable.in-game #game {
@@ -246,30 +268,6 @@
             #game:not(.with-list) #found-list {
                 min-height: min(120px, 30vh);
             }
-        }
-
-        /* Fallback for when even a fully-shrunk found-words list doesn't
-           leave enough room — e.g. a landscape phone short enough that
-           the HUD, grid, and current-word/Submit/Clear controls alone
-           (before #found-list's floor is even reached) already exceed
-           100dvh. Toggled by JS (see checkInGameOverflow()) only when
-           needed, rather than always in effect, since the fixed height
-           above is what makes #found-list shrink to fit in the first
-           place, and this needs to stay off whenever that's working.
-           Without this fallback, the fixed height means overflow spills
-           silently past body's own box with no padding-bottom reserved
-           after it (that padding is *inside* the fixed-height box, so
-           overflow consumes it rather than extending past it) — and
-           since the footer is pinned to the same spot in the viewport
-           regardless of scroll position, it ends up permanently covering
-           whatever content overflowed into that space, with no amount of
-           scrolling able to bring it out from underneath. Switching to
-           min-height instead lets the page grow to fit and reserve that
-           padding properly, so the overflow scrolls clear of the footer
-           like it would anywhere else on the site. */
-        body.scrollable.in-game.overflowing {
-            height: auto;
-            min-height: 100dvh;
         }
 
         /* Portrait: plenty of vertical room on a tall phone, and the grid
@@ -299,6 +297,10 @@
 
             #game:not(.with-list) #board-area .grid-stack {
                 flex: 0 0 auto;
+                /* ~10% smaller than the normal min(80vw, 60vh) -- freeing a
+                   bit more room for #found-list below, without shrinking
+                   the dice enough to make them uncomfortable to tap. */
+                width: min(72vw, 54vh);
             }
 
             #game:not(.with-list) #board-area .word-list-panel {
@@ -944,9 +946,14 @@
 
         // How wide a single found-words column is, and the gap between
         // them — used to decide how many columns fit, and given to each
-        // column as an explicit width (see renderFoundWords()).
-        const FOUND_COLUMN_WIDTH = 100;
-        const FOUND_COLUMN_GAP = 16;
+        // column as an explicit width (see renderFoundWords()). Narrower
+        // than it used to be (was 100/16) specifically so a third column
+        // fits on a typical phone in portrait -- paired with the smaller
+        // #found-list li font-size below, since these words are read-only
+        // (no tap targets to keep roomy) and can afford to run a bit
+        // tighter than the rest of the UI.
+        const FOUND_COLUMN_WIDTH = 74;
+        const FOUND_COLUMN_GAP = 12;
 
         // How much width the found-words columns have to work with.
         // Below the 900px breakpoint, .word-list-panel actually stretches
@@ -999,7 +1006,6 @@
                 });
                 foundListEl.appendChild(ul);
             }
-            checkInGameOverflow();
         }
 
         // ================= Timer =================
@@ -1047,31 +1053,6 @@
             document.body.style.overflowY = '';
         }
 
-        // Detects the (rare) case where even a fully-shrunk found-words
-        // list still doesn't leave enough room during play on a short
-        // screen — e.g. a landscape phone where the HUD, grid, and
-        // current-word/Submit/Clear controls alone already exceed 100dvh
-        // — and switches from a fixed viewport height to a natural,
-        // scrollable one (see the .overflowing fallback rule above) so
-        // nothing ends up permanently hidden behind the footer.
-        //
-        // A one-way latch: once a game has needed the fallback, it only
-        // ever adds more found words from there (never fewer), so it can
-        // never stop needing it before startGame() resets the latch for
-        // the next game. This used to remove the class and re-measure on
-        // every single word submitted, which forced a reflow from the
-        // fixed-height layout back to itself each time -- once a game was
-        // already in the fallback state, that briefly (and pointlessly)
-        // snapped the page back into the pinned layout on every word
-        // before immediately re-adding the fallback, which is what caused
-        // a visible jump each time a word was added.
-        function checkInGameOverflow() {
-            if (document.body.classList.contains('overflowing')) return;
-            if (document.documentElement.scrollHeight > window.innerHeight) {
-                document.body.classList.add('overflowing');
-            }
-        }
-
         function startGame() {
             score = 0;
             foundWords = [];
@@ -1095,11 +1076,6 @@
             // returnToSetup() since the post-game reveal is allowed to grow
             // and scroll the whole page instead.
             document.body.classList.add('in-game');
-            // Resets the one-way latch checkInGameOverflow() uses -- a
-            // fresh game hasn't earned the fallback yet regardless of
-            // whether the last one needed it.
-            document.body.classList.remove('overflowing');
-            checkInGameOverflow();
 
             gameActive = true;
             startTimer(untimedOn ? 0 : timeLimitMinutes);
@@ -1157,9 +1133,8 @@
         endGameBtn.addEventListener('click', endGame);
         newGameBtn.addEventListener('click', returnToSetup);
 
-        // Rotating the phone mid-game changes both the available height and
-        // (see foundColumnBudget()) how many found-words columns fit, and
-        // whether the .overflowing fallback above is needed.
+        // Rotating the phone mid-game changes both the available height
+        // and (see foundColumnBudget()) how many found-words columns fit.
         window.addEventListener('resize', () => {
             if (gameActive) {
                 renderFoundWords();
