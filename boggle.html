@@ -318,13 +318,6 @@
                 flex-wrap: nowrap;
                 align-items: center;
                 width: 100%;
-                /* Passes #game's fixed leftover height (see #game's own
-                   flex: 1; min-height: 0 above) down to .word-list-panel
-                   below, instead of #board-area just sizing to its
-                   content's natural (fully-grown) height and pushing the
-                   real constraint back onto #game/body. */
-                flex: 1;
-                min-height: 0;
             }
 
             #game:not(.with-list) #board-area .grid-stack {
@@ -338,33 +331,29 @@
             #game:not(.with-list) #board-area .word-list-panel {
                 width: 100%;
                 max-width: 100%;
-                /* Claims whatever height .grid-stack (fixed, flex: 0 0 auto
-                   above) doesn't need, so #found-list below actually gets
-                   the true leftover space to grow into -- see #found-list's
-                   own flex: 1; min-height: 0 override below, which replaces
-                   the old flat max-height guess entirely in this layout. */
-                flex: 1;
-                min-height: 0;
             }
 
-            /* Fills whatever height .word-list-panel has left after its
-               title, and scrolls internally (overflow-y: auto, set
-               unconditionally further up) once even that's not enough --
-               replacing the old max-height: min(55vh, 480px) guess, which
-               had no actual relationship to how much room the HUD and grid
-               left over and was very often more generous than the real
-               leftover space. min-height keeps its existing floor so the
-               list never disappears entirely on a very short screen. */
+            /* #found-list's height here is set directly in JS (see
+               updateFoundListHeight() in the script below), not via CSS.
+               An earlier version tried flex: 1; min-height: 0 cascaded
+               through #game -> #board-area -> .word-list-panel ->
+               #found-list to make this "whatever's left after the HUD and
+               grid" sizing happen automatically -- that's the textbook
+               approach, and it worked in every desktop browser this was
+               tested in, but real mobile WebKit (an iPhone, a different
+               phone, a different browser, and an iOS simulator all showed
+               the same failure) does not reliably propagate min-height: 0
+               through that many nested flex levels, so #found-list kept
+               its full natural (unshrunk) height instead of actually
+               shrinking to fit -- overflowing behind the fixed footer,
+               which is what was clipping its rounded corners into a
+               square edge. Computing the target height from real measured
+               positions instead sidesteps that whole class of bug: it
+               doesn't matter whether nested flex-shrink works correctly,
+               because nothing here depends on it anymore. min-height
+               remains as a floor in case the script hasn't run yet. */
             #game:not(.with-list) #found-list {
-                flex: 1;
                 min-height: min(120px, 30vh);
-                max-height: none;
-                /* Cancels the fixed height set above (900px+) -- flex: 1
-                   already determines the real size here (whatever's left
-                   after the HUD and grid), and an inherited fixed height
-                   could otherwise still act as an extra constraint on top
-                   of that. */
-                height: auto;
             }
 
             /* The post-game reveal stacks the same way -- #board-area's
@@ -630,6 +619,41 @@
         // yet at this point in parsing, so measuring now would silently
         // no-op (see the guard above) and never get a real value.
         document.addEventListener('DOMContentLoaded', updateFooterSpaceVar);
+
+        // Sets #found-list's height directly from measured positions,
+        // rather than leaning on nested flex-shrink (see the portrait
+        // media query's comment for #found-list, above, for why that
+        // turned out not to be reliable on real mobile browsers). None of
+        // this depends on #game/#board-area/.word-list-panel actually
+        // shrinking correctly -- it only reads where things already are:
+        // the true bottom boundary is the viewport height minus body's own
+        // reserved padding-bottom (which already accounts for the fixed
+        // footer, see --footer-space above), and #found-list's top is
+        // wherever the HUD, grid, and title naturally ended up, none of
+        // which need to shrink to render at their normal sizes.
+        function updateFoundListHeight() {
+            if (window.innerWidth >= 900 || gameEl.classList.contains('with-list')) {
+                // Desktop has its own fixed CSS height (see #found-list),
+                // and the post-game reveal is allowed to grow/scroll the
+                // whole page instead -- this only applies to the pinned
+                // in-game portrait/landscape layouts, and landscape
+                // already has its own static height in CSS.
+                foundListEl.style.height = '';
+                return;
+            }
+            if (window.innerWidth >= window.innerHeight) {
+                // Landscape: height: min(38vh, 320px) in CSS already
+                // handles this without any measurement.
+                foundListEl.style.height = '';
+                return;
+            }
+            const availableBottom = window.innerHeight - parseFloat(getComputedStyle(document.body).paddingBottom);
+            const listTop = foundListEl.getBoundingClientRect().top;
+            const panelPaddingBottom = parseFloat(getComputedStyle(wordListPanelEl).paddingBottom);
+            const floor = Math.min(120, window.innerHeight * 0.3);
+            const target = availableBottom - listTop - panelPaddingBottom;
+            foundListEl.style.height = Math.max(floor, target) + 'px';
+        }
 
         const rulesBtn = document.getElementById('rules-btn');
         const rulesDialog = document.getElementById('rules-dialog');
@@ -1151,6 +1175,7 @@
             // returnToSetup() since the post-game reveal is allowed to grow
             // and scroll the whole page instead.
             document.body.classList.add('in-game');
+            updateFoundListHeight();
 
             gameActive = true;
             startTimer(untimedOn ? 0 : timeLimitMinutes);
@@ -1211,10 +1236,14 @@
         // Rotating the phone mid-game changes both the available height
         // and (see foundColumnBudget()) how many found-words columns fit,
         // and the footer's own rendered height (its font-size is a clamp()
-        // of viewport size too).
+        // of viewport size too). updateFooterSpaceVar() has to run first --
+        // updateFoundListHeight() reads body's padding-bottom, which is
+        // exactly what --footer-space (set by updateFooterSpaceVar())
+        // controls.
         window.addEventListener('resize', () => {
             updateFooterSpaceVar();
             if (gameActive) {
+                updateFoundListHeight();
                 renderFoundWords();
             }
         });
