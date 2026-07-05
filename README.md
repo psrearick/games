@@ -1,4 +1,4 @@
-# Quiet Games
+# Low Stim Play
 
 A small collection of single-page, no-build web games, designed to be gentle on the eyes.
 
