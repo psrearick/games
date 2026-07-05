@@ -139,29 +139,58 @@
             line-height: 1;
         }
 
-        /* Before the game ends, keep the grid fixed at true center and let
-           the found-words panel occupy space to its right without
-           shifting it — unlike the post-game reveal (.board-area rules
-           in boggle-shared.css), which centers the whole shrunk block
-           together once the board-area switches to #game.with-list. The
-           symmetric side columns are what keep the (auto-width) middle
-           column centered regardless of the panel's width. Static has no
-           "words found while playing" state, so it never needs this. */
+        /* Before the game ends, center the grid+panel pair as a row and
+           let the found-words panel sit to the grid's right without
+           shifting it — unlike the post-game reveal (.board-area rules in
+           boggle-shared.css), which centers the whole shrunk block
+           together once the board-area switches to #game.with-list.
+           Static has no "words found while playing" state, so it never
+           needs this.
+           An earlier version used a 3-column CSS grid (empty spacer /
+           grid-stack / panel, the two outer columns matching minmax(0,
+           1fr) tracks) specifically to keep the grid at the viewport's
+           *true* center regardless of the panel's width. That's given up
+           here on purpose: a matching empty spacer the same width as the
+           panel claims just as much leftover space as the panel itself
+           does, so on anything but a very wide window, the panel was
+           only ever getting *half* of the space actually left over after
+           the grid -- nowhere near enough for the 3-column width target
+           below (measured: at 1280x900, that was leaving the panel only
+           ~330px, room for 2 columns). Centering the pair as a single
+           flex row instead gives the panel the *entire* leftover width to
+           negotiate down from its preferred size, not half of it, which
+           is what actually makes 3 columns reachable at ordinary desktop
+           sizes. The grid ends up slightly left of dead-center (by about
+           half the panel's width) rather than perfectly centered, which
+           is a fair trade -- the original centering was really about
+           *not shifting* as the panel changed size mid-game, and the
+           panel is fixed-size now regardless of which layout does the
+           centering. */
         @media (min-width: 900px) {
             #game:not(.with-list) #board-area {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                justify-content: center;
                 align-items: start;
             }
 
             #game:not(.with-list) #board-area .grid-stack {
-                grid-column: 2;
+                flex: 0 0 auto;
             }
 
             #game:not(.with-list) #board-area .word-list-panel {
-                grid-column: 3;
-                justify-self: start;
-                max-width: min(28vw, 320px);
+                /* Prefers 590px -- 3 columns at 170px plus 2 16px gaps
+                   (see foundColumnMetrics() below) plus room for this
+                   panel's own padding -- but can still shrink,
+                   flex-shrink: 1, rather than overflow on a desktop
+                   window too narrow to fully fit both the grid and a
+                   590px panel side by side. min-width: 0 is what lets it
+                   actually shrink below its content's automatic minimum
+                   instead of that silently winning and overflowing
+                   anyway. */
+                flex: 0 1 590px;
+                min-width: 0;
             }
         }
 
@@ -191,9 +220,19 @@
            content is in it. */
         #found-list {
             display: flex;
-            /* Matches FOUND_COLUMN_GAP in the script below -- the column
-               count math there assumes this exact gap, so the two need to
-               stay in sync or the columns could overflow their budget. */
+            /* .word-list-panel (and this along with it) is stretched to a
+               fixed (content-independent) width rather than sized to fit
+               its columns -- 100% below 900px, a flex-basis above it --
+               see the breakpoints below in both cases -- without this,
+               fewer columns than the max (or the max not dividing evenly
+               into the available width) just left the leftover space
+               bunched up on the right, after the last column, instead of
+               spread between them. */
+            justify-content: space-evenly;
+            /* Matches foundColumnMetrics() in the script below -- the
+               column count math there assumes this exact gap (12px below
+               900px), so the two need to stay in sync or the columns could
+               overflow their budget. */
             gap: 12px;
             /* A fixed height, not max-height -- this is the box's one and
                only size, reserved up front regardless of how many words
@@ -201,17 +240,24 @@
                that grew (visibly resizing) as words were added, only
                becoming this size once it was actually full; sizing it to
                its ceiling from the start means adding a word never
-               changes the box itself, only how much of it is used. Below
-               900px this gets overridden by the flex-based sizing in the
-               breakpoints below instead (there, "how much room is left
-               after the HUD and grid" is the real ceiling, not a guessed
-               viewport fraction). */
+               changes the box itself, only how much of it is used. This
+               is only a pre-JS fallback now -- updateFoundListHeight() in
+               the script below sets an explicit inline height once it
+               runs (matching the boggle grid's real height on desktop,
+               the actual leftover space on mobile), overriding this. */
             height: min(55vh, 480px);
             overflow-y: auto;
             overflow-x: hidden;
         }
 
-        /* Width is set explicitly per-column in JS (see FOUND_COLUMN_WIDTH
+        @media (min-width: 900px) {
+            #found-list {
+                /* Matches foundColumnMetrics() in the script below. */
+                gap: 16px;
+            }
+        }
+
+        /* Width is set explicitly per-column in JS (see foundColumnMetrics()
            and renderFoundWords() below) rather than an equal flex share of
            #found-list's own width — flex: 0 0 auto here just keeps that
            explicit width from being squeezed. */
@@ -632,13 +678,32 @@
         // wherever the HUD, grid, and title naturally ended up, none of
         // which need to shrink to render at their normal sizes.
         function updateFoundListHeight() {
-            if (window.innerWidth >= 900 || gameEl.classList.contains('with-list')) {
-                // Desktop has its own fixed CSS height (see #found-list),
-                // and the post-game reveal is allowed to grow/scroll the
-                // whole page instead -- this only applies to the pinned
-                // in-game portrait/landscape layouts, and landscape
-                // already has its own static height in CSS.
+            if (gameEl.classList.contains('with-list')) {
+                // The post-game reveal is allowed to grow/scroll the whole
+                // page instead -- this only applies to the pinned in-game
+                // layout.
                 foundListEl.style.height = '';
+                return;
+            }
+            if (window.innerWidth >= 900) {
+                // Matches #found-list's height to the boggle grid's own
+                // rendered height, so the two boxes line up side by side
+                // and neither one changes size as words are added -- only
+                // #found-list's own scrollbar responds to that. Measured
+                // rather than expressed as a CSS ratio (e.g. vh) because
+                // the grid's own height isn't a simple viewport fraction
+                // either -- it's derived from min(80vw, 60vh) plus the
+                // status line below it, and matching that exactly is much
+                // simpler to read off the real rendered box than to
+                // re-derive with a parallel CSS formula that has to be
+                // kept in sync by hand.
+                const gridHeight = gridEl.getBoundingClientRect().height;
+                const panelCs = getComputedStyle(wordListPanelEl);
+                const panelPadding = parseFloat(panelCs.paddingTop) + parseFloat(panelCs.paddingBottom);
+                const panelGap = parseFloat(panelCs.rowGap) || 8;
+                const titleHeight = wordListTitleEl.getBoundingClientRect().height;
+                const target = gridHeight - panelPadding - panelGap - titleHeight;
+                foundListEl.style.height = Math.max(120, target) + 'px';
                 return;
             }
             if (window.innerWidth >= window.innerHeight) {
@@ -1045,59 +1110,58 @@
 
         // How wide a single found-words column is, and the gap between
         // them — used to decide how many columns fit, and given to each
-        // column as an explicit width (see renderFoundWords()). Narrower
-        // than it used to be (was 100/16) specifically so a third column
-        // fits on a typical phone in portrait -- paired with the smaller
-        // #found-list li font-size below, since these words are read-only
-        // (no tap targets to keep roomy) and can afford to run a bit
-        // tighter than the rest of the UI.
-        const FOUND_COLUMN_WIDTH = 74;
-        const FOUND_COLUMN_GAP = 12;
+        // column as an explicit width (see renderFoundWords()). Mobile
+        // (74/12) is narrow enough to fit a third column on a typical
+        // phone in portrait, paired with the smaller #found-list li font-
+        // size below -- these words are read-only (no tap targets to keep
+        // roomy) and can afford to run tighter than the rest of the UI.
+        // Desktop (170/16) has real room to spare, so it's sized instead
+        // to comfortably fit the longest realistic word this dictionary
+        // produces plus its score suffix without wrapping. Measured with
+        // a detached, white-space: nowrap clone at this font (checking
+        // rendered width directly, not scrollWidth -- scrollWidth of an
+        // element that's actually wrapping is misleading, since wrapped
+        // text never overflows its own box horizontally by definition):
+        // "COUNTERPOINT (11)" needs ~157px, "HANDKERCHIEF (11)" ~155px.
+        // .word-list-panel's flex-basis on desktop (see the min-width:
+        // 900px rule above) is sized to match for exactly 3 such columns,
+        // so this only ever affects how many of those 3 are actually
+        // filled, never the panel's own size.
+        function foundColumnMetrics() {
+            return window.innerWidth >= 900
+                ? { width: 170, gap: 16 }
+                : { width: 74, gap: 12 };
+        }
 
         // How much width the found-words columns have to work with.
-        // Below the 900px breakpoint, .word-list-panel actually stretches
-        // to fill real space — width: 100% of #board-area when stacked in
-        // portrait, flex: 1 of the remaining row in landscape (see the
-        // @media queries above) — so its rendered width already means
-        // something. At 900px+ the panel is width: fit-content instead (so
-        // it stays compact when the list is short), which means its
-        // rendered width starts out shrunk around just the "Words Found"
-        // title and would never reflect how much room it's actually
-        // allowed — min(28vw, 320px), mirrored here rather than measured
-        // (getComputedStyle().maxWidth isn't a reliable source for this:
-        // it resolves a min()/vw expression to a real pixel value, but
-        // returns a plain percentage like "100%" as-is, unresolved, so one
-        // read can't handle both cases).
-        function foundColumnBudget() {
+        // .word-list-panel's width never depends on word count at any
+        // breakpoint now (100% of #board-area below 900px in portrait,
+        // flex: 1 of the row in landscape, flex: 0 1 590px at 900px+ --
+        // see the @media queries above), so its rendered clientWidth
+        // always means something and can just be measured directly.
+        function foundColumnBudget(colWidth) {
             const cs = getComputedStyle(wordListPanelEl);
             const padding = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-            const width = window.innerWidth < 900
-                ? wordListPanelEl.clientWidth
-                : Math.min(0.28 * window.innerWidth, 320);
-            return Math.max(FOUND_COLUMN_WIDTH, width - padding);
+            return Math.max(colWidth, wordListPanelEl.clientWidth - padding);
         }
 
         // Splits the found words into side-by-side <ul> columns instead of
         // one long list (see the #found-list comment above for why this is
-        // done by hand rather than with CSS columns). Each column gets an
-        // explicit width, rather than an equal flex share of #found-list's
-        // own width, for the same reason foundColumnBudget() above doesn't
-        // measure #found-list directly — an explicit width lets the
-        // (otherwise circular) fit-content panel size itself around the
-        // columns instead of the columns needing the panel's size first.
+        // done by hand rather than with CSS columns).
         function renderFoundWords() {
             const sorted = sortWords(foundWords.map(f => f.word))
                 .map(word => foundWords.find(f => f.word === word));
 
             foundListEl.innerHTML = '';
-            const budget = foundColumnBudget();
-            const cols = Math.max(1, Math.floor((budget + FOUND_COLUMN_GAP) / (FOUND_COLUMN_WIDTH + FOUND_COLUMN_GAP)));
+            const { width: colWidth, gap } = foundColumnMetrics();
+            const budget = foundColumnBudget(colWidth);
+            const cols = Math.max(1, Math.floor((budget + gap) / (colWidth + gap)));
             const perCol = Math.ceil(sorted.length / cols) || 1;
 
             for (let i = 0; i < sorted.length; i += perCol) {
                 const ul = document.createElement('ul');
                 ul.className = 'word-list';
-                ul.style.width = FOUND_COLUMN_WIDTH + 'px';
+                ul.style.width = colWidth + 'px';
                 sorted.slice(i, i + perCol).forEach(f => {
                     const li = document.createElement('li');
                     li.textContent = f.word.toUpperCase() + ' (' + f.points + ')';
