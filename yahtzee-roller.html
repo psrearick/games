@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title">
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title" tabindex="-1">
         <div class="rules-dialog-header">
             <div class="rules-dialog-title" id="rules-dialog-title">Yahtzee (Dice Only) Rules</div>
             <button type="button" class="rules-dialog-close" id="rules-dialog-close" aria-label="Close">&times;</button>
@@ -132,7 +132,15 @@
         const rulesDialog = document.getElementById('rules-dialog');
         const rulesDialogClose = document.getElementById('rules-dialog-close');
 
-        rulesBtn.addEventListener('click', () => rulesDialog.showModal());
+        rulesBtn.addEventListener('click', () => {
+            rulesDialog.showModal();
+            // Avoids an unexplained focus ring landing on the close button
+            // -- showModal() would otherwise auto-focus it as the first
+            // focusable element in the dialog. Focusing the dialog itself
+            // keeps Tab cycling through its controls without singling out
+            // the close button as the default one.
+            rulesDialog.focus();
+        });
         rulesDialogClose.addEventListener('click', () => rulesDialog.close());
         rulesDialog.addEventListener('click', (e) => {
             if (e.target === rulesDialog) rulesDialog.close();

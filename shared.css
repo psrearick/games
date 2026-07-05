@@ -57,6 +57,18 @@
     transition: none !important;
 }
 
+/* Every browser's default focus ring is a bright, saturated blue -- exactly
+   the kind of jarring accent this whole palette is built to avoid. --warn
+   (amber) reads clearly against the site's blue-gray tones without adding a
+   new color, and isn't already the "this is a link/heading" blue that
+   --accent/--bar carry elsewhere. input:focus-visible below overrides this
+   back to none -- that's an existing, deliberate choice for text inputs,
+   left as-is. */
+:focus-visible {
+    outline: 2px solid var(--warn);
+    outline-offset: 2px;
+}
+
 html,
 body {
     /* Stop horizontal drags near the edges from being interpreted as a
@@ -311,6 +323,16 @@ dialog.rules-dialog {
     max-height: min(88vh, 720px);
     overflow-y: auto;
     padding: clamp(18px, 3vmin, 30px);
+}
+
+/* The dialog itself is given programmatic focus when it opens (see each
+   page's rules-btn click handler) purely so Tab has somewhere to start
+   from -- it isn't a control in its own right, and already has its own
+   visible border, so a focus outline around the entire box would just be
+   a redundant second border. Buttons and links inside the dialog still
+   get the site-wide :focus-visible outline normally. */
+dialog.rules-dialog:focus-visible {
+    outline: none;
 }
 
 /* Belt-and-suspenders alongside the *, *::before, *::after reset above --

@@ -191,7 +191,18 @@
                count math there assumes this exact gap, so the two need to
                stay in sync or the columns could overflow their budget. */
             gap: 12px;
-            max-height: min(55vh, 480px);
+            /* A fixed height, not max-height -- this is the box's one and
+               only size, reserved up front regardless of how many words
+               are in it yet. A short list used to render as a short box
+               that grew (visibly resizing) as words were added, only
+               becoming this size once it was actually full; sizing it to
+               its ceiling from the start means adding a word never
+               changes the box itself, only how much of it is used. Below
+               900px this gets overridden by the flex-based sizing in the
+               breakpoints below instead (there, "how much room is left
+               after the HUD and grid" is the real ceiling, not a guessed
+               viewport fraction). */
+            height: min(55vh, 480px);
             overflow-y: auto;
             overflow-x: hidden;
         }
@@ -258,6 +269,18 @@
                    point is that the board stays put and only the found
                    words scroll. */
                 overflow-y: hidden;
+                /* Extra clearance above the shared body.scrollable default
+                   (shared.css), specifically for this pinned-height state.
+                   #game fills exactly this box (see its own flex: 1 below),
+                   so .word-list-panel's rounded bottom corners sit right at
+                   this padding's inner edge -- the shared clamp() is only a
+                   rough estimate of the fixed footer's real height plus the
+                   home indicator safe area, and running even a little short
+                   let the footer's solid background sit on top of those
+                   corners instead of below them, squaring them off. This
+                   buffer is deliberately generous rather than an exact
+                   match. */
+                padding-bottom: calc(clamp(48px, 7vmin, 72px) + env(safe-area-inset-bottom, 0px) + 24px);
             }
 
             body.scrollable.in-game #game {
@@ -327,6 +350,12 @@
                 flex: 1;
                 min-height: min(120px, 30vh);
                 max-height: none;
+                /* Cancels the fixed height set above (900px+) -- flex: 1
+                   already determines the real size here (whatever's left
+                   after the HUD and grid), and an inherited fixed height
+                   could otherwise still act as an extra constraint on top
+                   of that. */
+                height: auto;
             }
 
             /* The post-game reveal stacks the same way -- #board-area's
@@ -407,7 +436,10 @@
             }
 
             #game:not(.with-list) #found-list {
-                max-height: min(38vh, 320px);
+                /* Fixed height, not max-height -- same reasoning as the
+                   base #found-list rule (900px+): a consistent box size
+                   that doesn't visibly resize as words are added. */
+                height: min(38vh, 320px);
             }
 
             /* Post-game reveal: the same reasoning as the in-game row
@@ -444,7 +476,7 @@
         </div>
     </div>
 
-    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title">
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title" tabindex="-1">
         <div class="rules-dialog-header">
             <div class="rules-dialog-title" id="rules-dialog-title">Boggle Rules</div>
             <button type="button" class="rules-dialog-close" id="rules-dialog-close" aria-label="Close">&times;</button>
@@ -571,7 +603,18 @@
         const rulesDialog = document.getElementById('rules-dialog');
         const rulesDialogClose = document.getElementById('rules-dialog-close');
 
-        rulesBtn.addEventListener('click', () => rulesDialog.showModal());
+        rulesBtn.addEventListener('click', () => {
+            rulesDialog.showModal();
+            // showModal() auto-focuses the first focusable descendant --
+            // here, the close button, which is a purely mechanical choice
+            // (it's just the first interactive element in the markup) and
+            // showed up as an unexplained focus ring on it the moment the
+            // dialog opened. Focusing the dialog itself instead still
+            // keeps keyboard users inside it (Tab still cycles through the
+            // dialog's own controls from there) without implying the close
+            // button in particular was the intended default action.
+            rulesDialog.focus();
+        });
         rulesDialogClose.addEventListener('click', () => rulesDialog.close());
         // Clicking the ::backdrop fires a click whose target is the dialog
         // element itself (there's no child to be the target out there) —
