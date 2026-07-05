@@ -273,18 +273,23 @@
                    point is that the board stays put and only the found
                    words scroll. */
                 overflow-y: hidden;
-                /* Extra clearance above the shared body.scrollable default
-                   (shared.css), specifically for this pinned-height state.
-                   #game fills exactly this box (see its own flex: 1 below),
+                /* #game fills exactly this box (see its own flex: 1 below),
                    so .word-list-panel's rounded bottom corners sit right at
-                   this padding's inner edge -- the shared clamp() is only a
-                   rough estimate of the fixed footer's real height plus the
-                   home indicator safe area, and running even a little short
-                   let the footer's solid background sit on top of those
-                   corners instead of below them, squaring them off. This
-                   buffer is deliberately generous rather than an exact
-                   match. */
-                padding-bottom: calc(clamp(48px, 7vmin, 72px) + env(safe-area-inset-bottom, 0px) + 24px);
+                   this padding's inner edge -- it needs to match the fixed
+                   footer's real rendered height (plus a little breathing
+                   room) exactly, or the footer's solid background sits on
+                   top of those corners instead of below them, squaring them
+                   off. A clamp()/env(safe-area-inset-bottom) guess (what
+                   this used to be) can only ever approximate that: resizing
+                   a desktop browser window never exercises a real
+                   safe-area-inset-bottom value at all (it's always 0
+                   outside an actual notch/home-indicator device), so a
+                   mismatch here can look perfect on desktop at every size
+                   and still run short on an iPhone specifically. Measuring
+                   the footer's actual box (see updateFooterSpaceVar() in
+                   the script below, which sets --footer-space) instead of
+                   guessing is correct by construction on any device. */
+                padding-bottom: var(--footer-space, 84px);
             }
 
             body.scrollable.in-game #game {
@@ -602,6 +607,29 @@
             const visibleCount = buttonBarEl.querySelectorAll('button:not(.hidden)').length;
             buttonBarEl.classList.toggle('many-buttons', visibleCount >= 4);
         }
+
+        // Sets --footer-space to the footer's real, currently-rendered
+        // height plus a little breathing room, so body.scrollable.in-game's
+        // padding-bottom (see the max-width: 899px rules above) can match
+        // it exactly instead of guessing via clamp()/env(safe-area-inset-
+        // bottom) -- a guess that's only ever tested against a real,
+        // nonzero safe-area inset on an actual notch/home-indicator device,
+        // never by resizing a desktop browser window. Measuring is correct
+        // by construction regardless of device quirks a formula could miss.
+        // Looks the footer up fresh each call, rather than caching it in a
+        // top-level const, because this script runs before <footer> itself
+        // has been parsed (it's later in the document) -- querying it now
+        // would just get null.
+        function updateFooterSpaceVar() {
+            const footer = document.querySelector('.site-footer');
+            if (!footer) return;
+            const height = footer.getBoundingClientRect().height;
+            document.documentElement.style.setProperty('--footer-space', (height + 12) + 'px');
+        }
+        // DOMContentLoaded, not an immediate call -- <footer> doesn't exist
+        // yet at this point in parsing, so measuring now would silently
+        // no-op (see the guard above) and never get a real value.
+        document.addEventListener('DOMContentLoaded', updateFooterSpaceVar);
 
         const rulesBtn = document.getElementById('rules-btn');
         const rulesDialog = document.getElementById('rules-dialog');
@@ -1181,8 +1209,11 @@
         newGameBtn.addEventListener('click', returnToSetup);
 
         // Rotating the phone mid-game changes both the available height
-        // and (see foundColumnBudget()) how many found-words columns fit.
+        // and (see foundColumnBudget()) how many found-words columns fit,
+        // and the footer's own rendered height (its font-size is a clamp()
+        // of viewport size too).
         window.addEventListener('resize', () => {
+            updateFooterSpaceVar();
             if (gameActive) {
                 renderFoundWords();
             }
