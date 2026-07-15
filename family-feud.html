@@ -55,9 +55,19 @@
             pointer-events: auto !important;
         }
 
+        /* shared.css's chrome-hidden collapse (max-width/padding/border to 0)
+           targets every .right button so faded neighbors don't leave gaps --
+           it doesn't know about .chrome-keep, so it has to be countered here
+           on every property it sets, not just opacity, or these buttons would
+           stay "visible" but squashed to zero width. */
         body.chrome-hidden .button-bar .right>.chrome-keep {
             opacity: 1 !important;
             pointer-events: auto !important;
+            max-width: 240px !important;
+            padding-left: clamp(18px, 2.8vmin, 34px) !important;
+            padding-right: clamp(18px, 2.8vmin, 34px) !important;
+            border-left-width: 2px !important;
+            border-right-width: 2px !important;
         }
 
         /* ---- Setup screen ---- */
@@ -937,6 +947,9 @@
             boardEl.classList.toggle('hidden', hideBoard);
             strikesEl.classList.toggle('hidden', hideBoard);
             potEl.classList.toggle('hidden', hideBoard);
+            // The last judge message (e.g. "Match! ... (12 pts)") is stale
+            // once play has moved on to a round summary or the final score.
+            messageEl.classList.toggle('hidden', hideBoard);
 
             strikeMarks.forEach((mark, i) => {
                 mark.classList.toggle('active', i < state.strikes);

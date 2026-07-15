@@ -477,16 +477,39 @@ body.chrome-hidden .fullscreen-toggle {
 }
 
 .button-bar .left,
-.button-bar .right > button:not(#chrome-toggle-btn),
 .site-footer > * {
     transition: opacity 0.3s ease !important;
 }
 
+/* Individual .right buttons (as opposed to .left, which fades as one
+   block) collapse their own width/padding/border alongside the opacity
+   fade -- some pages (e.g. Family Feud) keep a couple of .right buttons
+   visible via .chrome-keep while their neighbors fade, and without this
+   the faded-but-still-present buttons would leave gaps in the middle of
+   the row instead of letting the kept buttons close up flush against the
+   fullscreen toggle. overflow: hidden clips the label during the collapse;
+   max-width has a generous cap so normal-width buttons aren't clipped in
+   the visible state. */
+.button-bar .right > button:not(#chrome-toggle-btn) {
+    overflow: hidden;
+    max-width: 240px;
+    transition: opacity 0.3s ease, max-width 0.3s ease, padding-left 0.3s ease, padding-right 0.3s ease, border-left-width 0.3s ease, border-right-width 0.3s ease !important;
+}
+
 body.chrome-hidden .button-bar .left,
-body.chrome-hidden .button-bar .right > button:not(#chrome-toggle-btn),
 body.chrome-hidden .site-footer > * {
     opacity: 0;
     pointer-events: none;
+}
+
+body.chrome-hidden .button-bar .right > button:not(#chrome-toggle-btn) {
+    opacity: 0;
+    pointer-events: none;
+    max-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
 }
 
 .fullscreen-toggle {
