@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script>
+        if (localStorage.getItem('theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="shared.css">
+    <title>Family Feud — Low Stim Play</title>
+    <meta name="description" content="A single-screen Family Feud style game for family game night. An LLM judges guesses server-side, so the whole family plays from one shared, calm, low-contrast screen.">
+    <meta property="og:site_name" content="Low Stim Play">
+    <meta property="og:title" content="Family Feud — Low Stim Play">
+    <meta property="og:description" content="A single-screen Family Feud style game for family game night. An LLM judges guesses server-side, so the whole family plays from one shared, calm, low-contrast screen.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/og-image.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Family Feud — Low Stim Play">
+    <meta name="twitter:description" content="A single-screen Family Feud style game for family game night. An LLM judges guesses server-side, so the whole family plays from one shared, calm, low-contrast screen.">
+    <meta name="twitter:image" content="/web-app-manifest-512x512.png">
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="LowStim" />
+    <style>
+        body.scrollable {
+            justify-content: flex-start;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ---- Setup screen ---- */
+        .team-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .team-input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .team-input-row label {
+            color: var(--ink);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .team-input-row input[type="text"] {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .setup-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .setup-row label {
+            color: var(--ink);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stepper button {
+            width: clamp(32px, 8vmin, 44px);
+            height: clamp(32px, 8vmin, 44px);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 4vmin, 24px);
+        }
+
+        .stepper-value {
+            color: var(--ink);
+            font-weight: bold;
+            font-size: clamp(16px, 2.4vmin, 20px);
+            min-width: 1.6em;
+            text-align: center;
+        }
+
+        .setup-status {
+            color: var(--ink);
+            opacity: 0.75;
+            font-size: clamp(12px, 1.6vmin, 15px);
+            text-align: center;
+        }
+
+        .setup-status.error {
+            color: var(--warn);
+            opacity: 1;
+        }
+
+        /* ---- Game screen ---- */
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: clamp(14px, 2vmin, 24px);
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: clamp(14px, 3vmin, 40px);
+            flex-wrap: wrap;
+        }
+
+        .team-card {
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: 10px;
+            padding: clamp(8px, 1.4vmin, 16px) clamp(18px, 2.8vmin, 30px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 140px;
+        }
+
+        /* Controlling team gets the accent border rather than a filled
+           highlight -- keeps the "who's up" cue readable without adding a
+           second saturated fill color next to the scores. */
+        .team-card.controlling {
+            border-color: var(--accent);
+        }
+
+        .team-name {
+            color: var(--ink);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            font-size: clamp(12px, 1.7vmin, 16px);
+            text-align: center;
+        }
+
+        .team-score {
+            color: var(--bar);
+            font-weight: bold;
+            font-size: clamp(26px, 4.4vmin, 42px);
+        }
+
+        .round-indicator {
+            color: var(--ink);
+            opacity: 0.75;
+            font-size: clamp(12px, 1.6vmin, 15px);
+            letter-spacing: 0.05em;
+            text-align: center;
+        }
+
+        .prompt {
+            color: var(--bar);
+            font-weight: bold;
+            text-align: center;
+            font-size: clamp(17px, 2.8vmin, 28px);
+            letter-spacing: 0.02em;
+            width: min(94vw, 900px);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(8px, 1.4vmin, 16px);
+            width: min(94vw, 900px);
+        }
+
+        .tile {
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: 8px;
+            padding: clamp(8px, 1.4vmin, 14px) clamp(14px, 2vmin, 20px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: clamp(40px, 6.4vmin, 56px);
+        }
+
+        .tile-index {
+            color: var(--ink);
+            opacity: 0.6;
+            font-weight: bold;
+            font-size: clamp(14px, 2vmin, 19px);
+            width: 1.6em;
+            text-align: center;
+            flex: 0 0 auto;
+        }
+
+        .tile-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            /* Reveal is an opacity fade capped well under 300ms, never a
+               slide/scale/bounce -- see README's accessibility rules. The
+               transition lives on this specific selector, overriding the
+               site-wide *, *::before, *::after { transition: none !important }
+               reset the same way chrome-toggle's fades do in shared.css. */
+            transition: opacity 0.25s ease !important;
+        }
+
+        .tile.revealed .tile-content {
+            opacity: 1;
+        }
+
+        .tile.manual-pending .tile-content {
+            opacity: 0.6;
+        }
+
+        .tile-text {
+            color: var(--ink);
+            font-weight: bold;
+            font-size: clamp(14px, 2vmin, 19px);
+        }
+
+        .tile-points {
+            color: var(--bar);
+            font-weight: bold;
+            font-size: clamp(14px, 2vmin, 19px);
+            flex: 0 0 auto;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .tile-content {
+                transition: none !important;
+            }
+        }
+
+        .play-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(20px, 4vmin, 48px);
+            flex-wrap: wrap;
+        }
+
+        .strikes {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .strikes-label {
+            color: var(--ink);
+            opacity: 0.75;
+            font-size: clamp(12px, 1.6vmin, 15px);
+            letter-spacing: 0.05em;
+        }
+
+        .strike-mark {
+            width: clamp(14px, 2.2vmin, 20px);
+            height: clamp(14px, 2.2vmin, 20px);
+            border-radius: 50%;
+            border: 2px solid var(--die-border);
+            background: var(--die);
+        }
+
+        .strike-mark.active {
+            background: var(--warn);
+            border-color: var(--warn);
+        }
+
+        .pot {
+            color: var(--bar);
+            font-weight: bold;
+            font-size: clamp(16px, 2.4vmin, 22px);
+        }
+
+        .message {
+            min-height: 1.7em;
+            color: var(--ink);
+            font-size: clamp(13px, 1.8vmin, 17px);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .message.error {
+            color: var(--warn);
+        }
+
+        .guess-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: min(94vw, 560px);
+        }
+
+        .guess-form input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn-danger {
+            border-color: var(--warn);
+            color: var(--warn);
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            background: var(--die);
+            border: 2px solid var(--die-border);
+            border-radius: 10px;
+            padding: clamp(18px, 3vmin, 32px);
+            width: min(94vw, 480px);
+            text-align: center;
+        }
+
+        .panel-title {
+            color: var(--bar);
+            font-weight: bold;
+            font-size: clamp(17px, 2.4vmin, 22px);
+            letter-spacing: 0.04em;
+        }
+
+        .panel p {
+            color: var(--ink);
+            line-height: 1.5;
+        }
+
+        .final-scores {
+            display: flex;
+            gap: clamp(20px, 4vmin, 48px);
+        }
+
+        #confirm-dialog-message {
+            color: var(--ink);
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .confirm-dialog-controls {
+            margin-top: 14px;
+        }
+    </style>
+</head>
+
+<body class="scrollable">
+
+    <div class="button-bar">
+        <div class="left">
+            <a href="index.html"><button>Home</button></a>
+            <button type="button" id="rules-btn">Rules</button>
+        </div>
+        <div class="right">
+            <button id="newGameBtn" class="hidden">New Game</button>
+            <button type="button" id="chrome-toggle-btn" class="fullscreen-toggle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <g class="icon-expand">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                        <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                        <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                    </g>
+                    <g class="icon-collapse">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                        <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                        <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                        <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                    </g>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-dialog-title" tabindex="-1">
+        <div class="rules-dialog-header">
+            <div class="rules-dialog-title" id="rules-dialog-title">Family Feud Rules</div>
+            <button type="button" class="rules-dialog-close" id="rules-dialog-close" aria-label="Close">&times;</button>
+        </div>
+
+        <h3>How to Use This Page</h3>
+        <ul>
+            <li>One person is the host and types on this screen; everyone else just calls out answers out loud (in
+                person or over a video call, with this screen shared).</li>
+            <li>The answers for each question are hidden from everyone, including the host — an AI judge checks each
+                guess against the hidden list and reveals a tile only when it finds a match.</li>
+            <li>Type whatever a player calls out and press Submit (or Enter). "Checking..." means the judge is
+                thinking; the input is disabled until it answers.</li>
+        </ul>
+
+        <h3>Full Rules</h3>
+        <ul>
+            <li>Two teams. Control of the board alternates automatically each round — no face-off buzzer round.</li>
+            <li>On the controlling team's turn, every correct new answer reveals its tile and adds its points to the
+                pot. A wrong guess adds a strike.</li>
+            <li>Guessing something already revealed doesn't count as a strike — it's just shown as "already up
+                there."</li>
+            <li>Three strikes hands one steal guess to the other team. A match on the steal wins the whole pot for
+                the stealing team; a miss lets the controlling team keep it.</li>
+            <li>Once every tile is revealed (or the steal is resolved), the round ends, the pot is awarded, and any
+                remaining answers are shown before moving on.</li>
+            <li><strong>Undo</strong> reverts the single most recent reveal or strike — use it for a misclick or a
+                clearly wrong judge call.</li>
+            <li>If the judge is unreachable for a while, "Reveal answers &amp; finish this round by eye" shows the
+                full hidden list so the host can finish scoring the round by ear. It intentionally ends secrecy for
+                that question, so it's meant as a last resort.</li>
+        </ul>
+    </dialog>
+
+    <dialog class="rules-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title" tabindex="-1">
+        <div class="rules-dialog-header">
+            <div class="rules-dialog-title" id="confirm-dialog-title">Are you sure?</div>
+        </div>
+        <p id="confirm-dialog-message"></p>
+        <div class="controls confirm-dialog-controls">
+            <button type="button" id="confirm-dialog-cancel">Cancel</button>
+            <button type="button" id="confirm-dialog-ok" class="btn-danger">Continue</button>
+        </div>
+    </dialog>
+
+    <!-- Setup screen -->
+    <div class="setup" id="setup">
+        <div class="heading">Family Feud</div>
+
+        <div class="team-inputs">
+            <div class="team-input-row">
+                <label for="team0Name">Team 1</label>
+                <input type="text" id="team0Name" maxlength="24" value="Team 1">
+            </div>
+            <div class="team-input-row">
+                <label for="team1Name">Team 2</label>
+                <input type="text" id="team1Name" maxlength="24" value="Team 2">
+            </div>
+        </div>
+
+        <div class="setup-row">
+            <label>Rounds</label>
+            <div class="stepper">
+                <button type="button" id="roundsDown" aria-label="Fewer rounds">&minus;</button>
+                <div class="stepper-value" id="roundsValue">5</div>
+                <button type="button" id="roundsUp" aria-label="More rounds">+</button>
+            </div>
+        </div>
+
+        <button type="button" id="startBtn" disabled>Loading questions&hellip;</button>
+        <div class="setup-status" id="setupStatus"></div>
+    </div>
+
+    <!-- Game screen -->
+    <div id="game" class="hidden">
+        <div class="scoreboard">
+            <div class="team-card" id="teamCard0">
+                <div class="team-name" id="teamCardName0">Team 1</div>
+                <div class="team-score" id="teamCardScore0">0</div>
+            </div>
+            <div class="round-indicator" id="roundIndicator">Round 1 of 5</div>
+            <div class="team-card" id="teamCard1">
+                <div class="team-name" id="teamCardName1">Team 2</div>
+                <div class="team-score" id="teamCardScore1">0</div>
+            </div>
+        </div>
+
+        <div class="prompt" id="prompt"></div>
+
+        <div class="board" id="board"></div>
+
+        <div class="play-status">
+            <div class="strikes" id="strikes">
+                <span class="strikes-label">Strikes</span>
+                <span class="strike-mark" data-n="0"></span>
+                <span class="strike-mark" data-n="1"></span>
+                <span class="strike-mark" data-n="2"></span>
+            </div>
+            <div class="pot" id="pot">Pot: 0</div>
+        </div>
+
+        <div class="message" id="message" aria-live="polite"></div>
+
+        <form class="guess-form" id="guessForm">
+            <input type="text" id="guessInput" placeholder="Type the guess called out..." autocomplete="off">
+            <button type="submit" id="submitBtn">Submit</button>
+        </form>
+
+        <div class="controls" id="playControls">
+            <button type="button" id="undoBtn" disabled>Undo</button>
+            <button type="button" id="swapControlBtn">Swap Who's Up</button>
+            <button type="button" id="manualRevealBtn" class="btn-danger">Reveal answers &amp; finish this round by
+                eye</button>
+            <button type="button" id="endGameBtn">End Game</button>
+        </div>
+
+        <div class="panel hidden" id="manualPanel">
+            <div class="panel-title">Finish this round by eye</div>
+            <p>The hidden answers are now shown above. Talk it through, then award the pot to whichever team you
+                agree got it.</p>
+            <div class="controls">
+                <button type="button" id="awardManual0"></button>
+                <button type="button" id="awardManual1"></button>
+            </div>
+        </div>
+
+        <div class="panel hidden" id="roundEndPanel">
+            <div class="panel-title" id="roundEndTitle"></div>
+            <div class="controls">
+                <button type="button" id="nextRoundBtn">Next Question</button>
+            </div>
+        </div>
+
+        <div class="panel hidden" id="gameEndPanel">
+            <div class="panel-title">Final Score</div>
+            <div class="final-scores">
+                <div class="team-card" id="finalCard0">
+                    <div class="team-name" id="finalName0"></div>
+                    <div class="team-score" id="finalScore0"></div>
+                </div>
+                <div class="team-card" id="finalCard1">
+                    <div class="team-name" id="finalName1"></div>
+                    <div class="team-score" id="finalScore1"></div>
+                </div>
+            </div>
+            <div class="panel-title" id="winnerTitle"></div>
+        </div>
+    </div>
+
+    <script>
+        // ================= Config =================
+        const API_URL = '/.netlify/functions/game';
+        const STORAGE_KEY = 'family-feud-state-v1';
+        const MIN_ROUNDS = 1;
+        const DEFAULT_ROUNDS = 5;
+
+        // ================= DOM refs =================
+        const setupEl = document.getElementById('setup');
+        const gameEl = document.getElementById('game');
+        const team0NameInput = document.getElementById('team0Name');
+        const team1NameInput = document.getElementById('team1Name');
+        const roundsDown = document.getElementById('roundsDown');
+        const roundsUp = document.getElementById('roundsUp');
+        const roundsValue = document.getElementById('roundsValue');
+        const startBtn = document.getElementById('startBtn');
+        const setupStatus = document.getElementById('setupStatus');
+        const newGameBtn = document.getElementById('newGameBtn');
+
+        const teamCard0 = document.getElementById('teamCard0');
+        const teamCard1 = document.getElementById('teamCard1');
+        const teamCardName0 = document.getElementById('teamCardName0');
+        const teamCardName1 = document.getElementById('teamCardName1');
+        const teamCardScore0 = document.getElementById('teamCardScore0');
+        const teamCardScore1 = document.getElementById('teamCardScore1');
+        const roundIndicator = document.getElementById('roundIndicator');
+        const promptEl = document.getElementById('prompt');
+        const boardEl = document.getElementById('board');
+        const strikeMarks = document.querySelectorAll('.strike-mark');
+        const potEl = document.getElementById('pot');
+        const messageEl = document.getElementById('message');
+        const guessForm = document.getElementById('guessForm');
+        const guessInput = document.getElementById('guessInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const swapControlBtn = document.getElementById('swapControlBtn');
+        const manualRevealBtn = document.getElementById('manualRevealBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const playControls = document.getElementById('playControls');
+        const manualPanel = document.getElementById('manualPanel');
+        const awardManual0 = document.getElementById('awardManual0');
+        const awardManual1 = document.getElementById('awardManual1');
+        const roundEndPanel = document.getElementById('roundEndPanel');
+        const roundEndTitle = document.getElementById('roundEndTitle');
+        const nextRoundBtn = document.getElementById('nextRoundBtn');
+        const gameEndPanel = document.getElementById('gameEndPanel');
+        const finalName0 = document.getElementById('finalName0');
+        const finalName1 = document.getElementById('finalName1');
+        const finalScore0 = document.getElementById('finalScore0');
+        const finalScore1 = document.getElementById('finalScore1');
+        const winnerTitle = document.getElementById('winnerTitle');
+
+        // ================= State =================
+        let questionList = null; // [{id, prompt, answerCount}], fetched once from the "list" action
+        let rounds = DEFAULT_ROUNDS;
+        let state = null; // the persisted game; null until a game is started/restored
+        let inFlight = false;
+        let pendingGuess = null; // last guess text, kept only for the Retry button
+
+        function apiCall(action, payload) {
+            return fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(Object.assign({ action }, payload)),
+            }).then((res) => {
+                if (!res.ok) throw new Error('request_failed');
+                return res.json();
+            });
+        }
+
+        function persist() {
+            if (state) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function clearPersisted() {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        function snapshot() {
+            return JSON.parse(JSON.stringify({
+                teams: state.teams,
+                revealed: state.revealed,
+                strikes: state.strikes,
+                pot: state.pot,
+                controllingTeam: state.controllingTeam,
+                phase: state.phase,
+            }));
+        }
+
+        function restoreSnapshot(snap) {
+            state.teams = snap.teams;
+            state.revealed = snap.revealed;
+            state.strikes = snap.strikes;
+            state.pot = snap.pot;
+            state.controllingTeam = snap.controllingTeam;
+            state.phase = snap.phase;
+        }
+
+        // ================= Setup screen =================
+        function loadQuestionList() {
+            setupStatus.textContent = 'Loading questions…';
+            setupStatus.classList.remove('error');
+            startBtn.disabled = true;
+            startBtn.textContent = 'Loading questions…';
+            apiCall('list').then((list) => {
+                questionList = list;
+                rounds = Math.min(DEFAULT_ROUNDS, list.length);
+                roundsValue.textContent = rounds;
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Game';
+                setupStatus.textContent = '';
+            }).catch(() => {
+                startBtn.textContent = 'Start Game';
+                setupStatus.textContent = "Couldn't load the question list. Make sure the game function is running (netlify dev) and ";
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.textContent = 'Retry';
+                retry.addEventListener('click', loadQuestionList);
+                setupStatus.appendChild(retry);
+                setupStatus.classList.add('error');
+            });
+        }
+
+        function maxRounds() {
+            return questionList ? questionList.length : 12;
+        }
+
+        roundsDown.addEventListener('click', () => {
+            rounds = Math.max(MIN_ROUNDS, rounds - 1);
+            roundsValue.textContent = rounds;
+        });
+
+        roundsUp.addEventListener('click', () => {
+            rounds = Math.min(maxRounds(), rounds + 1);
+            roundsValue.textContent = rounds;
+        });
+
+        function shuffled(arr) {
+            const copy = arr.slice();
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (!questionList) return;
+            const chosen = shuffled(questionList).slice(0, rounds);
+            state = {
+                teams: [
+                    { name: team0NameInput.value.trim() || 'Team 1', score: 0 },
+                    { name: team1NameInput.value.trim() || 'Team 2', score: 0 },
+                ],
+                questions: chosen,
+                currentQuestionIndex: 0,
+                revealed: {},
+                strikes: 0,
+                pot: 0,
+                controllingTeam: 0,
+                phase: 'PLAY',
+                lastAction: null,
+            };
+            persist();
+            enterGameScreen();
+        });
+
+        // ================= Screen switching =================
+        function enterGameScreen() {
+            setupEl.classList.add('hidden');
+            gameEl.classList.remove('hidden');
+            newGameBtn.classList.remove('hidden');
+            render();
+        }
+
+        function enterSetupScreen() {
+            gameEl.classList.add('hidden');
+            setupEl.classList.remove('hidden');
+            newGameBtn.classList.add('hidden');
+            if (!questionList) loadQuestionList();
+        }
+
+        newGameBtn.addEventListener('click', async () => {
+            if (!await showConfirm('Start a new game? This clears the current scores and board.')) return;
+            state = null;
+            clearPersisted();
+            enterSetupScreen();
+        });
+
+        // ================= Confirm dialog =================
+        // Replaces window.confirm() -- a native dialog would break the site's
+        // muted, low-contrast look with a bright OS-default modal.
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmMessage = document.getElementById('confirm-dialog-message');
+        const confirmOk = document.getElementById('confirm-dialog-ok');
+        const confirmCancel = document.getElementById('confirm-dialog-cancel');
+        let confirmResolve = null;
+
+        function showConfirm(message) {
+            confirmMessage.textContent = message;
+            confirmDialog.showModal();
+            confirmDialog.focus();
+            return new Promise((resolve) => { confirmResolve = resolve; });
+        }
+
+        confirmOk.addEventListener('click', () => {
+            confirmDialog.close();
+            if (confirmResolve) confirmResolve(true);
+        });
+        confirmCancel.addEventListener('click', () => {
+            confirmDialog.close();
+            if (confirmResolve) confirmResolve(false);
+        });
+        confirmDialog.addEventListener('cancel', () => {
+            if (confirmResolve) confirmResolve(false);
+        });
+
+        // ================= Rendering =================
+        function currentQuestion() {
+            return state.questions[state.currentQuestionIndex];
+        }
+
+        function render() {
+            if (!state) return;
+
+            teamCardName0.textContent = state.teams[0].name;
+            teamCardName1.textContent = state.teams[1].name;
+            teamCardScore0.textContent = state.teams[0].score;
+            teamCardScore1.textContent = state.teams[1].score;
+            const turnTeam = state.phase === 'STEAL' ? 1 - state.controllingTeam : state.controllingTeam;
+            const showTurn = state.phase === 'PLAY' || state.phase === 'STEAL';
+            teamCard0.classList.toggle('controlling', showTurn && turnTeam === 0);
+            teamCard1.classList.toggle('controlling', showTurn && turnTeam === 1);
+
+            roundIndicator.textContent = state.phase === 'GAME_END'
+                ? 'Game over'
+                : 'Round ' + (state.currentQuestionIndex + 1) + ' of ' + state.questions.length +
+                    (state.phase === 'STEAL' ? ' — Steal: ' + state.teams[turnTeam].name : '');
+
+            // currentQuestionIndex points past the end of state.questions once
+            // the game has ended -- there's no current question left to render.
+            const q = state.phase === 'GAME_END' ? null : currentQuestion();
+            if (q) {
+                promptEl.textContent = q.prompt;
+
+                boardEl.innerHTML = '';
+                for (let i = 0; i < q.answerCount; i++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    const rev = state.revealed[i];
+                    if (rev) tile.classList.add('revealed');
+                    const idx = document.createElement('div');
+                    idx.className = 'tile-index';
+                    idx.textContent = i + 1;
+                    const content = document.createElement('div');
+                    content.className = 'tile-content';
+                    const text = document.createElement('div');
+                    text.className = 'tile-text';
+                    const points = document.createElement('div');
+                    points.className = 'tile-points';
+                    if (rev) {
+                        text.textContent = rev.text;
+                        points.textContent = rev.points;
+                    }
+                    content.appendChild(text);
+                    content.appendChild(points);
+                    tile.appendChild(idx);
+                    tile.appendChild(content);
+                    boardEl.appendChild(tile);
+                }
+            }
+
+            promptEl.classList.toggle('hidden', state.phase === 'GAME_END');
+            boardEl.classList.toggle('hidden', state.phase === 'GAME_END');
+            document.getElementById('strikes').classList.toggle('hidden', state.phase === 'GAME_END');
+            potEl.classList.toggle('hidden', state.phase === 'GAME_END');
+
+            strikeMarks.forEach((mark, i) => {
+                mark.classList.toggle('active', i < state.strikes);
+            });
+            potEl.textContent = 'Pot: ' + state.pot;
+
+            undoBtn.disabled = !state.lastAction;
+
+            const inPlay = state.phase === 'PLAY' || state.phase === 'STEAL';
+            guessForm.classList.toggle('hidden', !inPlay);
+            playControls.classList.toggle('hidden', !inPlay);
+            swapControlBtn.classList.toggle('hidden', state.phase !== 'PLAY');
+            manualPanel.classList.toggle('hidden', state.phase !== 'MANUAL');
+            roundEndPanel.classList.toggle('hidden', state.phase !== 'ROUND_END');
+            gameEndPanel.classList.toggle('hidden', state.phase !== 'GAME_END');
+
+            if (state.phase === 'MANUAL') {
+                awardManual0.textContent = 'Award pot to ' + state.teams[0].name;
+                awardManual1.textContent = 'Award pot to ' + state.teams[1].name;
+            }
+
+            if (state.phase === 'GAME_END') {
+                finalName0.textContent = state.teams[0].name;
+                finalName1.textContent = state.teams[1].name;
+                finalScore0.textContent = state.teams[0].score;
+                finalScore1.textContent = state.teams[1].score;
+                if (state.teams[0].score === state.teams[1].score) {
+                    winnerTitle.textContent = "It's a tie!";
+                } else {
+                    const winner = state.teams[0].score > state.teams[1].score ? state.teams[0] : state.teams[1];
+                    winnerTitle.textContent = winner.name + ' wins!';
+                }
+            }
+
+            guessInput.disabled = inFlight;
+            submitBtn.disabled = inFlight;
+        }
+
+        // ================= Messaging =================
+        function setMessage(text, isError) {
+            messageEl.innerHTML = '';
+            messageEl.classList.toggle('error', !!isError);
+            const span = document.createElement('span');
+            span.textContent = text;
+            messageEl.appendChild(span);
+        }
+
+        function setMessageWithRetry(text, retryFn) {
+            setMessage(text, true);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'Retry';
+            btn.addEventListener('click', retryFn);
+            messageEl.appendChild(btn);
+        }
+
+        // ================= Guess submission =================
+        guessForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const guess = guessInput.value.trim();
+            if (!guess || inFlight) return;
+            submitGuess(guess);
+        });
+
+        function submitGuess(guess) {
+            pendingGuess = guess;
+            inFlight = true;
+            guessInput.disabled = true;
+            submitBtn.disabled = true;
+            setMessage('Checking…');
+
+            apiCall('judge', { questionId: currentQuestion().id, guess }).then((result) => {
+                inFlight = false;
+                guessInput.value = '';
+                handleJudgeResult(result);
+            }).catch(() => {
+                inFlight = false;
+                guessInput.disabled = false;
+                submitBtn.disabled = false;
+                setMessageWithRetry("Couldn't reach the judge.", () => submitGuess(pendingGuess));
+            });
+        }
+
+        function handleJudgeResult(result) {
+            state.lastAction = snapshot();
+
+            const matchIndex = result.matchIndex;
+            const isNewMatch = matchIndex !== null && matchIndex !== undefined && !state.revealed[matchIndex];
+
+            if (state.phase === 'PLAY') {
+                if (isNewMatch) {
+                    state.revealed[matchIndex] = { text: result.text, points: result.points };
+                    state.pot += result.points;
+                    setMessage('Match! ' + result.text + ' (' + result.points + ' pts)');
+                    if (Object.keys(state.revealed).length === currentQuestion().answerCount) {
+                        roundEnd(state.controllingTeam);
+                    }
+                } else if (matchIndex !== null && matchIndex !== undefined) {
+                    setMessage('Already up there.');
+                } else {
+                    state.strikes += 1;
+                    setMessage('No match. Strike ' + state.strikes + '.');
+                    if (state.strikes >= 3) {
+                        state.phase = 'STEAL';
+                    }
+                }
+            } else if (state.phase === 'STEAL') {
+                const otherTeam = 1 - state.controllingTeam;
+                if (isNewMatch) {
+                    state.revealed[matchIndex] = { text: result.text, points: result.points };
+                    setMessage('Steal! ' + result.text + ' (' + result.points + ' pts)');
+                    roundEnd(otherTeam);
+                } else {
+                    setMessage('No steal.');
+                    roundEnd(state.controllingTeam);
+                }
+            }
+
+            persist();
+            render();
+        }
+
+        // ================= Round / game flow =================
+        function roundEnd(winningTeam) {
+            state.teams[winningTeam].score += state.pot;
+            state.phase = 'ROUND_END';
+            roundEndTitle.textContent = state.teams[winningTeam].name + ' win the pot! (+' + state.pot + ')';
+
+            apiCall('reveal', { questionId: currentQuestion().id }).then((answers) => {
+                answers.forEach((a) => {
+                    if (!state.revealed[a.index]) state.revealed[a.index] = { text: a.text, points: a.points };
+                });
+                persist();
+                render();
+            }).catch(() => {
+                // Board still shows whatever was already revealed during play;
+                // the round has already been decided and scored either way.
+                persist();
+                render();
+            });
+        }
+
+        nextRoundBtn.addEventListener('click', () => {
+            state.currentQuestionIndex += 1;
+            if (state.currentQuestionIndex >= state.questions.length) {
+                state.phase = 'GAME_END';
+            } else {
+                state.revealed = {};
+                state.strikes = 0;
+                state.pot = 0;
+                state.controllingTeam = state.currentQuestionIndex % 2;
+                state.phase = 'PLAY';
+                state.lastAction = null;
+                setMessage('');
+            }
+            persist();
+            render();
+        });
+
+        endGameBtn.addEventListener('click', async () => {
+            if (!await showConfirm('End the game now and show final scores?')) return;
+            state.phase = 'GAME_END';
+            state.lastAction = null;
+            persist();
+            render();
+        });
+
+        // ================= Undo =================
+        undoBtn.addEventListener('click', () => {
+            if (!state.lastAction) return;
+            restoreSnapshot(state.lastAction);
+            state.lastAction = null;
+            setMessage('');
+            persist();
+            render();
+        });
+
+        // ================= Swap control =================
+        swapControlBtn.addEventListener('click', () => {
+            state.controllingTeam = 1 - state.controllingTeam;
+            persist();
+            render();
+        });
+
+        // ================= Manual fallback =================
+        manualRevealBtn.addEventListener('click', async () => {
+            if (inFlight) return;
+            if (!await showConfirm('This shows every hidden answer on the shared screen and ends secrecy for this question. Continue?')) return;
+            revealForManual();
+        });
+
+        function revealForManual() {
+            inFlight = true;
+            render();
+            apiCall('reveal', { questionId: currentQuestion().id }).then((answers) => {
+                inFlight = false;
+                state.lastAction = snapshot();
+                answers.forEach((a) => {
+                    state.revealed[a.index] = { text: a.text, points: a.points };
+                });
+                state.phase = 'MANUAL';
+                setMessage('');
+                persist();
+                render();
+            }).catch(() => {
+                inFlight = false;
+                setMessageWithRetry("Couldn't reach the judge.", revealForManual);
+                render();
+            });
+        }
+
+        function awardManual(teamIndex) {
+            state.lastAction = snapshot();
+            state.teams[teamIndex].score += state.pot;
+            state.pot = 0;
+            state.phase = 'ROUND_END';
+            roundEndTitle.textContent = state.teams[teamIndex].name + ' take the round.';
+            persist();
+            render();
+        }
+
+        awardManual0.addEventListener('click', () => awardManual(0));
+        awardManual1.addEventListener('click', () => awardManual(1));
+
+        // ================= Rules dialog =================
+        const rulesBtn = document.getElementById('rules-btn');
+        const rulesDialog = document.getElementById('rules-dialog');
+        const rulesDialogClose = document.getElementById('rules-dialog-close');
+        rulesBtn.addEventListener('click', () => {
+            rulesDialog.showModal();
+            rulesDialog.focus();
+        });
+        rulesDialogClose.addEventListener('click', () => rulesDialog.close());
+        rulesDialog.addEventListener('click', (e) => {
+            if (e.target === rulesDialog) rulesDialog.close();
+        });
+
+        // ================= Init =================
+        (function init() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                    enterGameScreen();
+                    return;
+                } catch (e) {
+                    clearPersisted();
+                }
+            }
+            enterSetupScreen();
+        })();
+    </script>
+
+    <footer class="site-footer">
+        <a href="about.html">About</a>
+        <a href="https://ko-fi.com/philliprearick" target="_blank" rel="noopener">Support Me</a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to light theme">Light Theme</button>
+    </footer>
+
+    <script src="theme.js"></script>
+    <script src="chrome-toggle.js"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("/sw.js");
+            });
+        }
+    </script>
+</body>
+
+</html>

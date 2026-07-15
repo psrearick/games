@@ -22,6 +22,7 @@ If you're adding a new game to this repo, keep those constraints in mind — see
 | Boggle (Group Play) | [boggle-static.html](boggle-static.html)   | A display-only variant for group play — shows the board and an optional visual timer bar; reveals all possible words when time's up. No interactive word entry. |
 | Yahtzee             | [yahtzee.html](yahtzee.html)               | Full Yahtzee scorecard for one or more players, including upper-section bonus and joker rules.                                   |
 | Yahtzee (Dice Only) | [yahtzee-roller.html](yahtzee-roller.html) | Just the dice — roll and hold dice without tracking a scorecard.                                                                 |
+| Family Feud         | [family-feud.html](family-feud.html)       | A single-screen Family Feud for game night — an LLM judges guesses server-side (via a Netlify Function), so there's no hidden host view to manage. Requires `netlify dev` locally; see [Family Feud setup](#family-feud-setup) below. |
 
 More games will be added over time; new entries should be linked from [index.html](index.html) as well as this table.
 
@@ -35,6 +36,10 @@ python3 -m http.server 8123
 
 Then open `http://localhost:8123`.
 
+Family Feud is the one exception — it needs its Netlify Function to answer, so it
+won't work correctly under the plain static server above. See
+[Family Feud setup](#family-feud-setup) below to run it locally.
+
 ## Project structure
 
 ```
@@ -46,12 +51,44 @@ boggle-shared.js      Shared Boggle logic: dice sets, board generation, solver, 
 boggle-shared.css     Shared Boggle styles: grid, word list, board layout
 yahtzee.html          Yahtzee scorecard
 yahtzee-roller.html   Standalone dice roller
+family-feud.html      Family Feud board + host controls (talks to netlify/functions/game.js)
+netlify.toml          Netlify config: functions directory + bundling the hidden question bank
+netlify/functions/game.js         Netlify Function: list/judge/reveal actions, calls the judge LLM via OpenRouter
+netlify/functions/questions.json  Hidden question/answer bank for Family Feud (server-side only, never sent to the client)
 shared.css            Shared color tokens, reset, and reusable components (buttons, button bar, footer, setup panel, etc.)
 theme.js              Dark/light theme toggle (persisted in localStorage)
 words.js / words.txt  Word list used for Boggle validation
 manifest.json         PWA manifest
 sw.js                 Service worker (network-first, offline fallback cache)
 ```
+
+## Family Feud setup
+
+Family Feud is the one game in this repo with a backend: a single Netlify
+Function (`netlify/functions/game.js`) that keeps each question's answers
+hidden from the browser and uses an LLM to judge guesses. See
+[family-feud-spec.md](family-feud-spec.md) for the full design rationale.
+
+**Local development:**
+
+1. Install the Netlify CLI if you don't have it: `npm install -g netlify-cli`.
+2. Set your OpenRouter key for the current shell: `export OPENROUTER_API_KEY=sk-or-...`
+   (get one at [openrouter.ai](https://openrouter.ai)).
+3. Run `netlify dev` from the repo root — this serves the static site *and*
+   the function together, usually at `http://localhost:8888`.
+
+**Deploying to Netlify:**
+
+In Site settings → Environment variables, set `OPENROUTER_API_KEY` to your
+OpenRouter key. Never commit it or reference it from client-side code.
+
+**Adding new questions:**
+
+Edit `netlify/functions/questions.json`. Each entry needs a unique `id`, a
+`prompt`, and an `answers` array sorted **descending by points** (index 0 is
+the top answer), with points for a question roughly totaling 100. You don't
+need to list synonyms — the judge LLM handles fuzzy matching against whatever
+text is there.
 
 ## Design guidelines
 
