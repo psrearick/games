@@ -1169,6 +1169,24 @@
         // Skip only replaces the current half's question with a fresh one --
         // it doesn't advance to the other team's turn or the next round.
         function skipCurrentHalf() {
+            // questionList is normally loaded from the setup screen, but a
+            // game restored from localStorage after a refresh skips setup
+            // entirely -- fetch it here on demand if it never arrived.
+            if (!questionList) {
+                inFlight = true;
+                render();
+                apiCall('list').then((list) => {
+                    questionList = list;
+                    inFlight = false;
+                    skipCurrentHalf();
+                }).catch(() => {
+                    inFlight = false;
+                    setMessageWithRetry("Couldn't reach the judge.", skipCurrentHalf);
+                    render();
+                });
+                return;
+            }
+
             const usedIds = new Set(state.questions.map((q) => q.id));
             const available = questionList.filter((q) => !usedIds.has(q.id));
             if (available.length === 0) {
@@ -1267,6 +1285,13 @@
                 try {
                     state = JSON.parse(saved);
                     enterGameScreen();
+                    // Restoring a game skips the setup screen, which is the
+                    // only other place questionList gets loaded -- fetch it
+                    // here too so Skip Question has a bank to pick from
+                    // without the host needing to trigger it first.
+                    if (!questionList) {
+                        apiCall('list').then((list) => { questionList = list; }).catch(() => { });
+                    }
                     return;
                 } catch (e) {
                     clearPersisted();

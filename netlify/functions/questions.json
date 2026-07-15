@@ -19,7 +19,7 @@
       { "text": "Overslept", "points": 28 },
       { "text": "Couldn't find their keys", "points": 14 },
       { "text": "Bad weather", "points": 11 },
-      { "text": "Alarm didn't go off", "points": 7 },
+      { "text": "Car trouble", "points": 7 },
       { "text": "Long line at the coffee shop", "points": 5 }
     ]
   },
@@ -32,7 +32,7 @@
       { "text": "Butter", "points": 16 },
       { "text": "Leftovers", "points": 14 },
       { "text": "Ketchup", "points": 9 },
-      { "text": "Mystery Tupperware", "points": 7 }
+      { "text": "Something expired", "points": 7 }
     ]
   },
   {
@@ -99,12 +99,12 @@
     "id": "resolution-fails",
     "prompt": "Name a reason a New Year's resolution fails.",
     "answers": [
-      { "text": "Lost motivation", "points": 30 },
-      { "text": "Too busy", "points": 22 },
-      { "text": "Life got in the way", "points": 16 },
-      { "text": "Set unrealistic goals", "points": 14 },
-      { "text": "Forgot about it", "points": 10 },
-      { "text": "Gave in to temptation", "points": 8 }
+      { "text": "Set unrealistic goals", "points": 26 },
+      { "text": "Gave in to temptation", "points": 22 },
+      { "text": "Got too busy", "points": 18 },
+      { "text": "Got sick or injured", "points": 14 },
+      { "text": "Lost interest", "points": 12 },
+      { "text": "No support from friends or family", "points": 8 }
     ]
   },
   {
@@ -161,7 +161,7 @@
     "answers": [
       { "text": "Hangover", "points": 28 },
       { "text": "Needed a mental health day", "points": 24 },
-      { "text": "Overslept", "points": 18 },
+      { "text": "Wanted a long weekend", "points": 18 },
       { "text": "Fake family emergency", "points": 14 },
       { "text": "Just didn't feel like going", "points": 10 },
       { "text": "Bad weather", "points": 6 }
@@ -195,12 +195,12 @@
     "id": "reasons-to-avoid-a-phone-call",
     "prompt": "Name a reason someone lets a call go to voicemail.",
     "answers": [
-      { "text": "Don't recognize the number", "points": 30 },
-      { "text": "Too busy", "points": 24 },
-      { "text": "Don't feel like talking", "points": 18 },
-      { "text": "In the middle of something", "points": 14 },
-      { "text": "Know who it is and don't want to talk", "points": 9 },
-      { "text": "Phone was on silent", "points": 5 }
+      { "text": "Don't recognize the number", "points": 28 },
+      { "text": "Know who it is and don't want to talk", "points": 22 },
+      { "text": "In the middle of something", "points": 18 },
+      { "text": "Phone was on silent", "points": 14 },
+      { "text": "Screening for spam or robocalls", "points": 12 },
+      { "text": "Bad signal", "points": 6 }
     ]
   },
   {
@@ -232,11 +232,11 @@
     "prompt": "Name something a kid says that embarrasses their parents.",
     "answers": [
       { "text": "Why is that man so fat?", "points": 28 },
-      { "text": "Are we there yet?", "points": 22 },
+      { "text": "Repeats something they overheard in private", "points": 22 },
       { "text": "A bad word they picked up", "points": 18 },
-      { "text": "I don't like this house", "points": 14 },
+      { "text": "I don't like this house (to the host)", "points": 14 },
       { "text": "How much money do you make?", "points": 10 },
-      { "text": "I have to go potty", "points": 8 }
+      { "text": "Compares their parents to a friend's parents", "points": 8 }
     ]
   },
   {
@@ -245,7 +245,7 @@
     "answers": [
       { "text": "Weekend plans / parties", "points": 28 },
       { "text": "Leftover treats in the house", "points": 24 },
-      { "text": "Too much effort right now", "points": 18 },
+      { "text": "Wants a fresh start / clean slate", "points": 18 },
       { "text": "One more cheat meal first", "points": 14 },
       { "text": "Stress eating", "points": 10 },
       { "text": "Just don't want to yet", "points": 6 }
@@ -296,7 +296,7 @@
       { "text": "Bad weather", "points": 16 },
       { "text": "Sore from last time", "points": 14 },
       { "text": "Forgot their gym bag", "points": 10 },
-      { "text": "Just didn't want to go", "points": 8 }
+      { "text": "Gym was closed", "points": 8 }
     ]
   },
   {
@@ -320,7 +320,7 @@
       { "text": "Skills (like \"fluent\" in a language)", "points": 18 },
       { "text": "Reason for leaving last job", "points": 14 },
       { "text": "GPA", "points": 10 },
-      { "text": "Responsibilities", "points": 6 }
+      { "text": "Salary at their last job", "points": 6 }
     ]
   },
   {
@@ -339,12 +339,12 @@
     "id": "reasons-for-a-messy-room",
     "prompt": "Name a reason someone's room is messy.",
     "answers": [
-      { "text": "Too lazy to clean", "points": 28 },
+      { "text": "Too lazy to clean", "points": 26 },
       { "text": "No time", "points": 22 },
       { "text": "Doesn't know where to start", "points": 18 },
-      { "text": "All the clean clothes are on the floor", "points": 14 },
-      { "text": "Waiting for laundry day", "points": 10 },
-      { "text": "It doesn't bother them", "points": 8 }
+      { "text": "Clothes end up on the floor", "points": 14 },
+      { "text": "Not enough storage space", "points": 12 },
+      { "text": "Kids or pets made the mess", "points": 8 }
     ]
   },
   {
@@ -366,8 +366,8 @@
       { "text": "Don't want to be called on", "points": 26 },
       { "text": "Not paying attention", "points": 22 },
       { "text": "Already said their piece", "points": 18 },
-      { "text": "Nervous to speak up", "points": 16 },
-      { "text": "Don't understand the topic", "points": 12 },
+      { "text": "Don't understand the topic", "points": 16 },
+      { "text": "Multitasking on other work", "points": 12 },
       { "text": "On mute and don't realize it", "points": 6 }
     ]
   },
