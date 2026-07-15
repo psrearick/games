@@ -211,6 +211,14 @@
             background: var(--bg);
         }
 
+        /* The Bonus / Yahtzee Bonus rows aren't .subtotal or .total, but
+           their value cells aren't .score-cell either (they're never
+           pickable) -- give them the same base background so the zebra
+           rule below can tint them in step with the rest of the row. */
+        table.scorecard td[data-role] {
+            background: var(--bg);
+        }
+
         table.scorecard td.score-cell.filled {
             font-weight: bold;
         }
@@ -224,6 +232,20 @@
 
         table.scorecard td.score-cell.pickable:hover {
             opacity: 1;
+        }
+
+        /* Zebra striping so a row stays easy to track across many player
+           columns. Kept deliberately faint (a hair's-width lightness step)
+           to stay low-stim; pickable cells already carry their own
+           background and are excluded so the "you can click this" cue
+           doesn't get diluted. */
+        table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td.category {
+            background: oklch(from var(--die) calc(l + 0.025) c h);
+        }
+
+        table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td.score-cell:not(.pickable),
+        table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td[data-role] {
+            background: oklch(from var(--bg) calc(l + 0.025) c h);
         }
 
         table.scorecard tr.subtotal td,
@@ -305,7 +327,9 @@
         <div class="dice-area">
             <div class="row" id="row"></div>
             <div class="controls">
+                <button id="undoBtn" disabled>Undo</button>
                 <button id="rollBtn">Roll</button>
+                <button id="redoBtn" disabled>Redo</button>
             </div>
         </div>
 
@@ -374,6 +398,8 @@
         const row = document.getElementById('row');
         const status = document.getElementById('status');
         const rollBtn = document.getElementById('rollBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
         const scorecardEl = document.getElementById('scorecard');
 
         // ---- Game state ----
@@ -386,6 +412,15 @@
         let currentPlayer = 0;
         let gameOver = false;
         let playerCount = 2;
+
+        // ---- Undo / redo ----
+        // Snapshots are taken before each roll and each point assignment, so
+        // undo/redo can step through multiple such actions. Dice being held
+        // is not itself tracked -- it's trivially reversible with another
+        // click, and reverting to a pre-roll snapshot naturally restores
+        // whatever was held at that point anyway.
+        let historyStack = [];
+        let redoStack = [];
 
         // ================= Setup screen =================
 
@@ -425,12 +460,15 @@
             });
             currentPlayer = 0;
             gameOver = false;
+            historyStack = [];
+            redoStack = [];
             setupEl.classList.add('hidden');
             gameEl.classList.remove('hidden');
             newGameBtn.classList.remove('hidden');
             buildDice();
             startTurn();
             buildScorecard();
+            updateUndoRedoButtons();
         });
 
         newGameBtn.addEventListener('click', () => {
@@ -483,6 +521,8 @@
             const hasRollable = dice.some(d => !d.kept);
             if (!hasRollable) return;
 
+            pushHistory();
+
             dice.forEach(d => {
                 if (!d.kept) {
                     d.value = 1 + Math.floor(Math.random() * 6);
@@ -503,13 +543,17 @@
             updateStatus();
         }
 
-        function updateStatus() {
+        function turnStatusText() {
             const p = players[currentPlayer];
             const rolled = dice.some(d => d.value !== null);
             const rollText = rolled
                 ? 'Roll ' + (MAX_ROLLS - rollsLeft) + ' of ' + MAX_ROLLS
                 : 'Press Roll to Start';
-            status.textContent = p.name + "'s turn — " + rollText;
+            return p.name + "'s turn — " + rollText;
+        }
+
+        function updateStatus() {
+            status.textContent = turnStatusText();
         }
 
         // ================= Scoring =================
@@ -772,6 +816,8 @@
             const values = diceValues();
             if (values.length !== COUNT) return; // must roll at least once
 
+            pushHistory();
+
             // Yahtzee Bonus: an extra Yahtzee (five-of-a-kind) earns a 100-point
             // bonus chip only if the Yahtzee box was already scored with 50.
             // Must be checked before this category's own score is recorded,
@@ -794,18 +840,86 @@
             renderScorecard();
         }
 
+        function gameOverStatusText() {
+            const best = players.reduce((a, b) => (totalScore(b) > totalScore(a) ? b : a));
+            const tie = players.filter(p => totalScore(p) === totalScore(best)).length > 1;
+            return tie
+                ? "Game Over — It's a tie at " + totalScore(best) + '!'
+                : 'Game Over — ' + best.name + ' wins with ' + totalScore(best) + '!';
+        }
+
         function endGame() {
             gameOver = true;
             rollBtn.disabled = true;
-            const best = players.reduce((a, b) => (totalScore(b) > totalScore(a) ? b : a));
-            const tie = players.filter(p => totalScore(p) === totalScore(best)).length > 1;
-            status.textContent = tie
-                ? "Game Over — It's a tie at " + totalScore(best) + '!'
-                : 'Game Over — ' + best.name + ' wins with ' + totalScore(best) + '!';
+            status.textContent = gameOverStatusText();
             renderScorecard();
         }
 
+        // ================= Undo / redo =================
+
+        function cloneDice(source) {
+            return source.map(d => ({ value: d.value, kept: d.kept }));
+        }
+
+        function clonePlayers(source) {
+            return source.map(p => ({
+                name: p.name,
+                scores: { ...p.scores },
+                yahtzeeBonusCount: p.yahtzeeBonusCount,
+            }));
+        }
+
+        function snapshotState() {
+            return {
+                dice: cloneDice(dice),
+                rollsLeft,
+                players: clonePlayers(players),
+                currentPlayer,
+                gameOver,
+            };
+        }
+
+        function restoreState(snap) {
+            dice = cloneDice(snap.dice);
+            rollsLeft = snap.rollsLeft;
+            players = clonePlayers(snap.players);
+            currentPlayer = snap.currentPlayer;
+            gameOver = snap.gameOver;
+
+            updateAllDice();
+            rollBtn.disabled = gameOver || rollsLeft <= 0;
+            status.textContent = gameOver ? gameOverStatusText() : turnStatusText();
+            renderScorecard();
+        }
+
+        function pushHistory() {
+            historyStack.push(snapshotState());
+            redoStack.length = 0;
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (historyStack.length === 0) return;
+            redoStack.push(snapshotState());
+            restoreState(historyStack.pop());
+            updateUndoRedoButtons();
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            historyStack.push(snapshotState());
+            restoreState(redoStack.pop());
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = historyStack.length === 0;
+            redoBtn.disabled = redoStack.length === 0;
+        }
+
         rollBtn.addEventListener('click', roll);
+        undoBtn.addEventListener('click', undo);
+        redoBtn.addEventListener('click', redo);
 
         setPlayerCount(playerCount);
     </script>
