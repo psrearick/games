@@ -142,5 +142,245 @@
       { "text": "Pen", "points": 7 },
       { "text": "Receipt", "points": 5 }
     ]
+  },
+  {
+    "id": "things-at-wedding",
+    "prompt": "Name something you'd see at a wedding.",
+    "answers": [
+      { "text": "Cake", "points": 26 },
+      { "text": "Rings", "points": 22 },
+      { "text": "Bouquet", "points": 18 },
+      { "text": "Dancing", "points": 16 },
+      { "text": "Tears / crying", "points": 10 },
+      { "text": "Awkward relatives", "points": 8 }
+    ]
+  },
+  {
+    "id": "reasons-to-call-in-sick",
+    "prompt": "Name a reason someone calls in sick when they're not.",
+    "answers": [
+      { "text": "Hangover", "points": 28 },
+      { "text": "Needed a mental health day", "points": 24 },
+      { "text": "Overslept", "points": 18 },
+      { "text": "Fake family emergency", "points": 14 },
+      { "text": "Just didn't feel like going", "points": 10 },
+      { "text": "Bad weather", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-you-do-before-bed",
+    "prompt": "Name something people do right before bed.",
+    "answers": [
+      { "text": "Brush their teeth", "points": 30 },
+      { "text": "Check their phone one more time", "points": 24 },
+      { "text": "Set an alarm", "points": 18 },
+      { "text": "Read", "points": 12 },
+      { "text": "Lock the doors", "points": 10 },
+      { "text": "Drink water", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-in-a-junk-drawer",
+    "prompt": "Name something you'd find in a junk drawer.",
+    "answers": [
+      { "text": "Batteries", "points": 26 },
+      { "text": "Rubber bands", "points": 22 },
+      { "text": "Old receipts", "points": 18 },
+      { "text": "Tape", "points": 14 },
+      { "text": "Random keys", "points": 12 },
+      { "text": "Dead pens", "points": 8 }
+    ]
+  },
+  {
+    "id": "reasons-to-avoid-a-phone-call",
+    "prompt": "Name a reason someone lets a call go to voicemail.",
+    "answers": [
+      { "text": "Don't recognize the number", "points": 30 },
+      { "text": "Too busy", "points": 24 },
+      { "text": "Don't feel like talking", "points": 18 },
+      { "text": "In the middle of something", "points": 14 },
+      { "text": "Know who it is and don't want to talk", "points": 9 },
+      { "text": "Phone was on silent", "points": 5 }
+    ]
+  },
+  {
+    "id": "things-say-on-first-date",
+    "prompt": "Name something people say on a first date.",
+    "answers": [
+      { "text": "Tell me about yourself", "points": 28 },
+      { "text": "What do you do for work?", "points": 24 },
+      { "text": "This is nice", "points": 18 },
+      { "text": "I've never done this before", "points": 12 },
+      { "text": "Do you come here often?", "points": 10 },
+      { "text": "So... any siblings?", "points": 8 }
+    ]
+  },
+  {
+    "id": "annoying-things-coworkers-do",
+    "prompt": "Name an annoying thing a coworker does.",
+    "answers": [
+      { "text": "Loud chewing", "points": 26 },
+      { "text": "Reply-all emails", "points": 22 },
+      { "text": "Taking credit for your work", "points": 18 },
+      { "text": "Being late to meetings", "points": 16 },
+      { "text": "Microwaving fish", "points": 12 },
+      { "text": "Talking too loud on the phone", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-kids-say",
+    "prompt": "Name something a kid says that embarrasses their parents.",
+    "answers": [
+      { "text": "Why is that man so fat?", "points": 28 },
+      { "text": "Are we there yet?", "points": 22 },
+      { "text": "A bad word they picked up", "points": 18 },
+      { "text": "I don't like this house", "points": 14 },
+      { "text": "How much money do you make?", "points": 10 },
+      { "text": "I have to go potty", "points": 8 }
+    ]
+  },
+  {
+    "id": "reasons-a-diet-starts-monday",
+    "prompt": "Name a reason people say they'll start their diet \"Monday.\"",
+    "answers": [
+      { "text": "Weekend plans / parties", "points": 28 },
+      { "text": "Leftover treats in the house", "points": 24 },
+      { "text": "Too much effort right now", "points": 18 },
+      { "text": "One more cheat meal first", "points": 14 },
+      { "text": "Stress eating", "points": 10 },
+      { "text": "Just don't want to yet", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-people-do-at-red-light",
+    "prompt": "Name something people do while stopped at a red light.",
+    "answers": [
+      { "text": "Check their phone", "points": 28 },
+      { "text": "Fix their hair or makeup", "points": 22 },
+      { "text": "Sing along to music", "points": 18 },
+      { "text": "Eat something", "points": 16 },
+      { "text": "Zone out", "points": 10 },
+      { "text": "Yell at the car ahead", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-you-regret-buying",
+    "prompt": "Name something people regret buying.",
+    "answers": [
+      { "text": "Gym membership they never used", "points": 26 },
+      { "text": "An impulse online purchase", "points": 22 },
+      { "text": "A timeshare", "points": 18 },
+      { "text": "A pet they weren't ready for", "points": 14 },
+      { "text": "An expensive gadget", "points": 12 },
+      { "text": "Lottery tickets", "points": 8 }
+    ]
+  },
+  {
+    "id": "things-in-a-hotel-room",
+    "prompt": "Name something you check for in a hotel room.",
+    "answers": [
+      { "text": "Clean sheets", "points": 26 },
+      { "text": "Remote control", "points": 22 },
+      { "text": "Coffee maker", "points": 18 },
+      { "text": "Extra towels", "points": 16 },
+      { "text": "Wifi password", "points": 12 },
+      { "text": "Mini fridge", "points": 6 }
+    ]
+  },
+  {
+    "id": "reasons-to-skip-the-gym",
+    "prompt": "Name a reason people skip the gym.",
+    "answers": [
+      { "text": "Too tired", "points": 28 },
+      { "text": "No time", "points": 24 },
+      { "text": "Bad weather", "points": 16 },
+      { "text": "Sore from last time", "points": 14 },
+      { "text": "Forgot their gym bag", "points": 10 },
+      { "text": "Just didn't want to go", "points": 8 }
+    ]
+  },
+  {
+    "id": "things-that-go-with-peanut-butter",
+    "prompt": "Name something people pair with peanut butter.",
+    "answers": [
+      { "text": "Jelly", "points": 32 },
+      { "text": "Banana", "points": 24 },
+      { "text": "Chocolate", "points": 18 },
+      { "text": "Bread", "points": 12 },
+      { "text": "Crackers", "points": 9 },
+      { "text": "Celery", "points": 5 }
+    ]
+  },
+  {
+    "id": "things-people-lie-about-on-resumes",
+    "prompt": "Name something people exaggerate on a resume.",
+    "answers": [
+      { "text": "Job title", "points": 28 },
+      { "text": "Years of experience", "points": 24 },
+      { "text": "Skills (like \"fluent\" in a language)", "points": 18 },
+      { "text": "Reason for leaving last job", "points": 14 },
+      { "text": "GPA", "points": 10 },
+      { "text": "Responsibilities", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-you-do-when-home-alone",
+    "prompt": "Name something people do when they're home alone.",
+    "answers": [
+      { "text": "Sing loudly", "points": 28 },
+      { "text": "Walk around without pants", "points": 22 },
+      { "text": "Eat straight from the container", "points": 18 },
+      { "text": "Dance around", "points": 14 },
+      { "text": "Talk to the pet", "points": 10 },
+      { "text": "Watch something embarrassing", "points": 8 }
+    ]
+  },
+  {
+    "id": "reasons-for-a-messy-room",
+    "prompt": "Name a reason someone's room is messy.",
+    "answers": [
+      { "text": "Too lazy to clean", "points": 28 },
+      { "text": "No time", "points": 22 },
+      { "text": "Doesn't know where to start", "points": 18 },
+      { "text": "All the clean clothes are on the floor", "points": 14 },
+      { "text": "Waiting for laundry day", "points": 10 },
+      { "text": "It doesn't bother them", "points": 8 }
+    ]
+  },
+  {
+    "id": "things-you-bring-camping",
+    "prompt": "Name something you'd bring camping.",
+    "answers": [
+      { "text": "Tent", "points": 28 },
+      { "text": "Sleeping bag", "points": 22 },
+      { "text": "Flashlight", "points": 18 },
+      { "text": "Bug spray", "points": 14 },
+      { "text": "Marshmallows", "points": 10 },
+      { "text": "Firewood", "points": 8 }
+    ]
+  },
+  {
+    "id": "reasons-people-are-quiet-in-meetings",
+    "prompt": "Name a reason someone stays quiet in a meeting.",
+    "answers": [
+      { "text": "Don't want to be called on", "points": 26 },
+      { "text": "Not paying attention", "points": 22 },
+      { "text": "Already said their piece", "points": 18 },
+      { "text": "Nervous to speak up", "points": 16 },
+      { "text": "Don't understand the topic", "points": 12 },
+      { "text": "On mute and don't realize it", "points": 6 }
+    ]
+  },
+  {
+    "id": "things-associated-with-superheroes",
+    "prompt": "Name something associated with superheroes.",
+    "answers": [
+      { "text": "Cape", "points": 28 },
+      { "text": "Mask", "points": 22 },
+      { "text": "Secret identity", "points": 18 },
+      { "text": "Superpowers", "points": 16 },
+      { "text": "Sidekick", "points": 10 },
+      { "text": "Villain", "points": 6 }
+    ]
   }
 ]
