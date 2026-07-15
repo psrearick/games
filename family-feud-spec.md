@@ -287,3 +287,22 @@ movement and high contrast. All of the following are required:
 - Face-off round where both teams' opening guesses are typed and control is assigned
   automatically to the higher-value match.
 - A larger question bank and/or categories.
+
+
+# Tasks
+
+There should be no buttons below the submit field
+    - Add button to skip questions in case the question has been played already or you just don't like it. It should be in the header.
+- The game over screen shows the scores twice. It should only show it once.
+- We do not need new game and end game. Just have end game. Put it where the new game button is. On the game over screen, it should be replaced with the new game button.
+- Remove the Undo feature, it's not needed in family feud.
+- Swap who's up should say "Swap Team" and it should be in the top bar to the left of end game.
+- "Reveal answers..." should be in the top bar and just say "Reveal"
+- "Type the guess called out..." should say "Type the answer..."
+- Strikes should be bigger and square/rectangular with the strike markers being "X"s
+- "Pot" should be under the round number between the scores
+- There should be more room between the scores and the question and between the question and the answers and between the answers and strikes
+- The rules text should be bigger and the modal wider on all games
+- - The Are You Sure modals should have bigger text.
+- The fullscreen button at the top right hides the top and bottom bar. In Boggle and Yahtzee, it should still keep some padding in the top and bottom. Top top of the game should align with the top of the icon to reveal the bars. In family feud, it should hide the bottom bar. In the top bar, it should hide all of the button aside from "Swap Team" and "Skip Question" and the game should not move higher and the bar should not disappear.
+- The fullscreen button needs added to boggle group play and yahtzee dice only
