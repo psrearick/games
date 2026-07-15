@@ -138,6 +138,14 @@
             opacity: 1;
         }
 
+        .setup-note {
+            color: var(--ink);
+            opacity: 0.7;
+            font-size: clamp(11px, 1.5vmin, 13px);
+            text-align: center;
+            margin-top: -6px;
+        }
+
         /* ---- Game screen ---- */
         #game {
             display: flex;
@@ -388,6 +396,45 @@
             line-height: 1.5;
         }
 
+        .round-summary-scores {
+            display: flex;
+            gap: clamp(20px, 4vmin, 48px);
+        }
+
+        .round-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .round-table th,
+        .round-table td {
+            padding: 6px 10px;
+            text-align: center;
+            font-size: clamp(13px, 1.7vmin, 16px);
+        }
+
+        .round-table th {
+            color: var(--ink);
+            opacity: 0.75;
+            font-weight: bold;
+            border-bottom: 2px solid var(--die-border);
+        }
+
+        .round-table td {
+            color: var(--ink);
+        }
+
+        .round-table td:first-child {
+            text-align: left;
+            opacity: 0.75;
+        }
+
+        .round-table tfoot td {
+            color: var(--bar);
+            font-weight: bold;
+            border-top: 2px solid var(--die-border);
+        }
+
         #confirm-dialog-message {
             color: var(--ink);
             font-size: clamp(16px, 2.1vmin, 19px);
@@ -447,25 +494,28 @@
                 guess against the hidden list and reveals a tile only when it finds a match.</li>
             <li>Type whatever a player calls out and press Submit (or Enter). "Checking..." means the judge is
                 thinking; the input is disabled until it answers.</li>
-            <li><strong>Swap Team</strong> in the top bar flips who's currently up, in case the automatic alternation
-                needs a manual correction.</li>
+            <li><strong>Swap Team</strong> in the top bar flips who's currently up, in case you want the two teams'
+                turns reordered within the current round.</li>
         </ul>
 
         <h3>Full Rules</h3>
         <ul>
-            <li>Two teams. Control of the board alternates automatically each round — no face-off buzzer round.</li>
+            <li>Two teams. Every round, both teams get a turn on their own question — Team 1 goes first, then Team 2
+                — so an odd number of rounds never gives either team an extra turn. No face-off buzzer round.</li>
             <li>On the controlling team's turn, every correct new answer reveals its tile and adds its points to the
                 pot. A wrong guess adds a strike.</li>
             <li>Guessing something already revealed doesn't count as a strike — it's just shown as "already up
                 there."</li>
             <li>Three strikes hands one steal guess to the other team. A match on the steal wins the whole pot for
                 the stealing team; a miss lets the controlling team keep it.</li>
-            <li>Once every tile is revealed (or the steal is resolved), the round ends, the pot is awarded, and any
-                remaining answers are shown before moving on.</li>
+            <li>Once every tile is revealed (or the steal is resolved), that team's turn ends, the pot is awarded, and
+                any remaining answers are shown before moving on to the other team's turn.</li>
+            <li>Once both teams have taken their turn, a round summary shows how many points each team earned that
+                round before moving to the next one.</li>
             <li>Don't like the current question, or already played it before? <strong>Skip Question</strong> in the
-                top bar moves on to a new one — no scoring change.</li>
+                top bar swaps in a different question for the same turn — no scoring change.</li>
             <li>If the judge is unreachable for a while, <strong>Reveal</strong> in the top bar shows the full hidden
-                list so the host can finish scoring the round by ear. It intentionally ends secrecy for that
+                list so the host can finish scoring that turn by ear. It intentionally ends secrecy for that
                 question, so it's meant as a last resort.</li>
         </ul>
     </dialog>
@@ -504,6 +554,7 @@
                 <button type="button" id="roundsUp" aria-label="More rounds">+</button>
             </div>
         </div>
+        <div class="setup-note">Each round, Team 1 and Team 2 both get a turn — Team 1 goes first.</div>
 
         <button type="button" id="startBtn" disabled>Loading questions&hellip;</button>
         <div class="setup-status" id="setupStatus"></div>
@@ -561,9 +612,43 @@
             </div>
         </div>
 
+        <div class="panel hidden" id="roundSummaryPanel">
+            <div class="panel-title" id="roundSummaryTitle"></div>
+            <div class="round-summary-scores">
+                <div class="team-card">
+                    <div class="team-name" id="summaryName0"></div>
+                    <div class="team-score" id="summaryPoints0"></div>
+                </div>
+                <div class="team-card">
+                    <div class="team-name" id="summaryName1"></div>
+                    <div class="team-score" id="summaryPoints1"></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button type="button" id="nextRoundSummaryBtn"></button>
+            </div>
+        </div>
+
         <div class="panel hidden" id="gameEndPanel">
             <div class="panel-title">Final Score</div>
             <div class="panel-title" id="winnerTitle"></div>
+            <table class="round-table" id="roundTable">
+                <thead>
+                    <tr>
+                        <th>Round</th>
+                        <th id="roundTableName0"></th>
+                        <th id="roundTableName1"></th>
+                    </tr>
+                </thead>
+                <tbody id="roundTableBody"></tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total</td>
+                        <td id="roundTableTotal0"></td>
+                        <td id="roundTableTotal1"></td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 
@@ -612,8 +697,20 @@
         const roundEndPanel = document.getElementById('roundEndPanel');
         const roundEndTitle = document.getElementById('roundEndTitle');
         const nextRoundBtn = document.getElementById('nextRoundBtn');
+        const roundSummaryPanel = document.getElementById('roundSummaryPanel');
+        const roundSummaryTitle = document.getElementById('roundSummaryTitle');
+        const summaryName0 = document.getElementById('summaryName0');
+        const summaryName1 = document.getElementById('summaryName1');
+        const summaryPoints0 = document.getElementById('summaryPoints0');
+        const summaryPoints1 = document.getElementById('summaryPoints1');
+        const nextRoundSummaryBtn = document.getElementById('nextRoundSummaryBtn');
         const gameEndPanel = document.getElementById('gameEndPanel');
         const winnerTitle = document.getElementById('winnerTitle');
+        const roundTableName0 = document.getElementById('roundTableName0');
+        const roundTableName1 = document.getElementById('roundTableName1');
+        const roundTableBody = document.getElementById('roundTableBody');
+        const roundTableTotal0 = document.getElementById('roundTableTotal0');
+        const roundTableTotal1 = document.getElementById('roundTableTotal1');
 
         // ================= State =================
         let questionList = null; // [{id, prompt, answerCount}], fetched once from the "list" action
@@ -687,7 +784,7 @@
             startBtn.textContent = 'Loading questions…';
             apiCall('list').then((list) => {
                 questionList = list;
-                rounds = Math.min(DEFAULT_ROUNDS, list.length);
+                rounds = Math.min(DEFAULT_ROUNDS, Math.floor(list.length / 2));
                 roundsValue.textContent = rounds;
                 startBtn.disabled = false;
                 startBtn.textContent = 'Start Game';
@@ -704,8 +801,10 @@
             });
         }
 
+        // Each round consumes 2 questions (one per team's turn), so the
+        // number of rounds is capped at half the bank size.
         function maxRounds() {
-            return questionList ? questionList.length : 12;
+            return questionList ? Math.floor(questionList.length / 2) : 6;
         }
 
         roundsDown.addEventListener('click', () => {
@@ -729,7 +828,7 @@
 
         startBtn.addEventListener('click', () => {
             if (!questionList) return;
-            const chosen = shuffled(questionList).slice(0, rounds);
+            const chosen = shuffled(questionList).slice(0, rounds * 2);
             state = {
                 teams: [
                     { name: team0NameInput.value.trim() || 'Team 1', score: 0 },
@@ -742,6 +841,10 @@
                 pot: 0,
                 controllingTeam: 0,
                 phase: 'PLAY',
+                // Points each team earned per round (index = round number),
+                // e.g. roundHistory[0] = { 0: 27, 1: 0 } -- shown side by side
+                // on the round summary and the final score table.
+                roundHistory: Array.from({ length: rounds }, () => ({ 0: 0, 1: 0 })),
             };
             persist();
             enterGameScreen();
@@ -782,10 +885,19 @@
             teamCard0.classList.toggle('controlling', showTurn && turnTeam === 0);
             teamCard1.classList.toggle('controlling', showTurn && turnTeam === 1);
 
+            // Each round is 2 questions -- one per team's turn -- so the
+            // round number is the question index halved, not the index itself.
+            const roundNumber = Math.floor(state.currentQuestionIndex / 2) + 1;
+            const totalRounds = state.questions.length / 2;
+            let roundSuffix = '';
+            if (state.phase === 'STEAL') {
+                roundSuffix = ' — Steal: ' + state.teams[turnTeam].name;
+            } else if (state.phase === 'PLAY') {
+                roundSuffix = ' — ' + state.teams[turnTeam].name + "'s turn";
+            }
             roundIndicator.textContent = state.phase === 'GAME_END'
                 ? 'Game over'
-                : 'Round ' + (state.currentQuestionIndex + 1) + ' of ' + state.questions.length +
-                    (state.phase === 'STEAL' ? ' — Steal: ' + state.teams[turnTeam].name : '');
+                : 'Round ' + roundNumber + ' of ' + totalRounds + roundSuffix;
 
             // currentQuestionIndex points past the end of state.questions once
             // the game has ended -- there's no current question left to render.
@@ -820,10 +932,11 @@
                 }
             }
 
-            promptEl.classList.toggle('hidden', state.phase === 'GAME_END');
-            boardEl.classList.toggle('hidden', state.phase === 'GAME_END');
-            strikesEl.classList.toggle('hidden', state.phase === 'GAME_END');
-            potEl.classList.toggle('hidden', state.phase === 'GAME_END');
+            const hideBoard = state.phase === 'GAME_END' || state.phase === 'ROUND_SUMMARY';
+            promptEl.classList.toggle('hidden', hideBoard);
+            boardEl.classList.toggle('hidden', hideBoard);
+            strikesEl.classList.toggle('hidden', hideBoard);
+            potEl.classList.toggle('hidden', hideBoard);
 
             strikeMarks.forEach((mark, i) => {
                 mark.classList.toggle('active', i < state.strikes);
@@ -839,12 +952,28 @@
             endGameBtn.textContent = state.phase === 'GAME_END' ? 'New Game' : 'End Game';
             manualPanel.classList.toggle('hidden', state.phase !== 'MANUAL');
             roundEndPanel.classList.toggle('hidden', state.phase !== 'ROUND_END');
+            if (state.phase === 'ROUND_END') {
+                nextRoundBtn.textContent = state.currentQuestionIndex % 2 === 0 ? 'Next Question' : 'See Round Summary';
+            }
+            roundSummaryPanel.classList.toggle('hidden', state.phase !== 'ROUND_SUMMARY');
             gameEndPanel.classList.toggle('hidden', state.phase !== 'GAME_END');
             updateButtonBarDensity();
 
             if (state.phase === 'MANUAL') {
                 awardManual0.textContent = 'Award pot to ' + state.teams[0].name;
                 awardManual1.textContent = 'Award pot to ' + state.teams[1].name;
+            }
+
+            if (state.phase === 'ROUND_SUMMARY') {
+                const justFinished = Math.floor(state.currentQuestionIndex / 2);
+                const result = state.roundHistory[justFinished];
+                roundSummaryTitle.textContent = 'Round ' + (justFinished + 1) + ' Complete';
+                summaryName0.textContent = state.teams[0].name;
+                summaryName1.textContent = state.teams[1].name;
+                summaryPoints0.textContent = result[0];
+                summaryPoints1.textContent = result[1];
+                const isLastRound = state.currentQuestionIndex + 1 >= state.questions.length;
+                nextRoundSummaryBtn.textContent = isLastRound ? 'See Final Score' : 'Next Round';
             }
 
             if (state.phase === 'GAME_END') {
@@ -854,6 +983,24 @@
                     const winner = state.teams[0].score > state.teams[1].score ? state.teams[0] : state.teams[1];
                     winnerTitle.textContent = winner.name + ' wins!';
                 }
+                roundTableName0.textContent = state.teams[0].name;
+                roundTableName1.textContent = state.teams[1].name;
+                roundTableBody.innerHTML = '';
+                state.roundHistory.forEach((result, i) => {
+                    const tr = document.createElement('tr');
+                    const tdRound = document.createElement('td');
+                    tdRound.textContent = 'Round ' + (i + 1);
+                    const td0 = document.createElement('td');
+                    td0.textContent = result[0];
+                    const td1 = document.createElement('td');
+                    td1.textContent = result[1];
+                    tr.appendChild(tdRound);
+                    tr.appendChild(td0);
+                    tr.appendChild(td1);
+                    roundTableBody.appendChild(tr);
+                });
+                roundTableTotal0.textContent = state.teams[0].score;
+                roundTableTotal1.textContent = state.teams[1].score;
             }
 
             guessInput.disabled = inFlight;
@@ -943,8 +1090,14 @@
         }
 
         // ================= Round / game flow =================
+        function recordRoundPoints(winningTeam, points) {
+            const roundIndex = Math.floor(state.currentQuestionIndex / 2);
+            state.roundHistory[roundIndex][winningTeam] += points;
+        }
+
         function roundEnd(winningTeam) {
             state.teams[winningTeam].score += state.pot;
+            recordRoundPoints(winningTeam, state.pot);
             state.phase = 'ROUND_END';
             roundEndTitle.textContent = state.teams[winningTeam].name + ' win the pot! (+' + state.pot + ')';
 
@@ -978,13 +1131,46 @@
             render();
         }
 
-        nextRoundBtn.addEventListener('click', advanceQuestion);
+        // A round is 2 questions (one per team's turn). Finishing the first
+        // half moves straight into the second half's question; finishing the
+        // second half shows a round summary (points each team earned this
+        // round) before actually advancing.
+        nextRoundBtn.addEventListener('click', () => {
+            if (state.currentQuestionIndex % 2 === 0) {
+                advanceQuestion();
+            } else {
+                state.phase = 'ROUND_SUMMARY';
+                persist();
+                render();
+            }
+        });
+
+        nextRoundSummaryBtn.addEventListener('click', advanceQuestion);
 
         skipQuestionBtn.addEventListener('click', async () => {
             if (inFlight) return;
-            if (!await showConfirm('Skip this question? Any points or strikes so far on it will be lost.')) return;
-            advanceQuestion();
+            if (!await showConfirm('Skip this question and try a different one? Any points or strikes so far on it will be lost.')) return;
+            skipCurrentHalf();
         });
+
+        // Skip only replaces the current half's question with a fresh one --
+        // it doesn't advance to the other team's turn or the next round.
+        function skipCurrentHalf() {
+            const usedIds = new Set(state.questions.map((q) => q.id));
+            const available = questionList.filter((q) => !usedIds.has(q.id));
+            if (available.length === 0) {
+                setMessage('No spare questions left in the bank to skip to.', true);
+                return;
+            }
+            state.questions[state.currentQuestionIndex] = available[Math.floor(Math.random() * available.length)];
+            state.revealed = {};
+            state.strikes = 0;
+            state.pot = 0;
+            state.phase = 'PLAY';
+            setMessage('');
+            persist();
+            render();
+        }
 
         // ================= End game / new game =================
         endGameBtn.addEventListener('click', async () => {
@@ -1037,6 +1223,7 @@
 
         function awardManual(teamIndex) {
             state.teams[teamIndex].score += state.pot;
+            recordRoundPoints(teamIndex, state.pot);
             state.pot = 0;
             state.phase = 'ROUND_END';
             roundEndTitle.textContent = state.teams[teamIndex].name + ' take the round.';
