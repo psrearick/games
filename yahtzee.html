@@ -193,8 +193,13 @@
             text-align: left;
             font-weight: bold;
             background: var(--die);
-            white-space: normal;
-            min-width: 108px;
+            /* Auto table layout otherwise hands this column an even share
+               of table's width:100%, same as every unconstrained player
+               column. width: 1% tells it this column only wants its
+               content's width -- combined with the inherited nowrap, that
+               collapses it to the longest label and leaves the rest for
+               the player columns. */
+            width: 1%;
         }
 
         table.scorecard th {
@@ -246,6 +251,13 @@
         table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td.score-cell:not(.pickable),
         table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td[data-role] {
             background: oklch(from var(--bg) calc(l + 0.025) c h);
+        }
+
+        /* The active player's column is mostly .pickable cells, which
+           otherwise share one flat background -- stripe that too so it
+           doesn't read as a solid block that breaks the row banding. */
+        table.scorecard tbody tr:nth-child(even):not(.subtotal):not(.total) td.score-cell.pickable {
+            background: oklch(from var(--die-kept) calc(l + 0.025) c h);
         }
 
         table.scorecard tr.subtotal td,
