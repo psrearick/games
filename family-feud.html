@@ -385,16 +385,19 @@
             width: min(94vw, 560px);
         }
 
-        /* Recessed (page-background) fill with an accent border, instead of
-           the shared raised --btn tone every button/tile uses -- this is the
-           one field the host actually types in every turn, so it should read
-           as distinct from the wall of buttons rather than as one more of
-           them. */
+        /* Recessed (page-background) fill with a muted-blue border, instead
+           of the shared raised --btn tone every button/tile uses -- this is
+           the one field the host actually types in every turn, so it should
+           read as distinct from the wall of buttons rather than as one more
+           of them. --bar (already used for the prompt/score text) is a much
+           less saturated blue than --accent, so it still stands out against
+           the neutral --die-border everywhere else without being a bright
+           highlight. */
         .guess-form input[type="text"] {
             flex: 1;
             min-width: 200px;
             background: var(--bg);
-            border-color: var(--accent);
+            border-color: var(--bar);
             font-size: clamp(15px, 2.1vmin, 20px);
         }
 
@@ -488,7 +491,7 @@
             <button type="button" id="rules-btn">Rules</button>
         </div>
         <div class="right">
-            <button type="button" id="manualRevealBtn" class="btn-danger hidden">Reveal</button>
+            <button type="button" id="manualRevealBtn" class="hidden">Reveal</button>
             <button type="button" id="endGameBtn" class="hidden">End Game</button>
             <button type="button" id="chrome-toggle-btn" class="fullscreen-toggle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
