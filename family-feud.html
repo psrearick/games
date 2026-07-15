@@ -524,8 +524,8 @@
                 guess against the hidden list and reveals a tile only when it finds a match.</li>
             <li>Type whatever a player calls out and press Submit (or Enter). "Checking..." means the judge is
                 thinking; the input is disabled until it answers.</li>
-            <li>Tap <strong>Turn options</strong> above the guess box to reveal Skip Question and Swap Team --
-                they're tucked away since you'd only need them once, right at the start of a turn.</li>
+            <li>Tap <strong>Options</strong> below the guess box to reveal Skip Question and Swap Team -- they're
+                tucked away since you'd only need them once, right at the start of a turn.</li>
         </ul>
 
         <h3>Full Rules</h3>
@@ -543,7 +543,7 @@
             <li>Once both teams have taken their turn, a round summary shows how many points each team earned that
                 round before moving to the next one.</li>
             <li>Don't like the current question, or already played it before? <strong>Skip Question</strong> (under
-                Turn options) swaps in a different question for the same turn — no scoring change.</li>
+                Options) swaps in a different question for the same turn — no scoring change.</li>
             <li>If the judge is unreachable for a while, <strong>Reveal</strong> in the top bar shows the full hidden
                 list so the host can finish scoring that turn by ear. It intentionally ends secrecy for that
                 question, so it's meant as a last resort.</li>
@@ -619,18 +619,18 @@
             <span class="strike-mark" data-n="2">&times;</span>
         </div>
 
-        <button type="button" id="turnOptionsToggle" class="link-toggle hidden">Turn options &#9662;</button>
-        <div class="controls hidden" id="turnOptionsRow">
-            <button type="button" id="skipQuestionBtn">Skip Question</button>
-            <button type="button" id="swapControlBtn">Swap Team</button>
-        </div>
-
         <div class="message" id="message" aria-live="polite"></div>
 
         <form class="guess-form" id="guessForm">
             <input type="text" id="guessInput" placeholder="Type the answer..." autocomplete="off">
             <button type="submit" id="submitBtn">Submit</button>
         </form>
+
+        <button type="button" id="turnOptionsToggle" class="link-toggle hidden">Options &#9662;</button>
+        <div class="controls hidden" id="turnOptionsRow">
+            <button type="button" id="skipQuestionBtn">Skip Question</button>
+            <button type="button" id="swapControlBtn">Swap Team</button>
+        </div>
 
         <div class="panel hidden" id="manualPanel">
             <div class="panel-title">Finish this round by eye</div>
@@ -990,7 +990,7 @@
             guessForm.classList.toggle('hidden', !inPlay);
             manualRevealBtn.classList.toggle('hidden', !inPlay);
             turnOptionsToggle.classList.toggle('hidden', !inPlay);
-            turnOptionsToggle.innerHTML = turnOptionsOpen ? 'Turn options &#9652;' : 'Turn options &#9662;';
+            turnOptionsToggle.innerHTML = turnOptionsOpen ? 'Options &#9652;' : 'Options &#9662;';
             turnOptionsRow.classList.toggle('hidden', !inPlay || !turnOptionsOpen);
             swapControlBtn.classList.toggle('hidden', state.phase !== 'PLAY');
             endGameBtn.classList.remove('hidden');
