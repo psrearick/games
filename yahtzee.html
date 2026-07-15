@@ -26,12 +26,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-title" content="LowStim" />
     <style>
+        /* shared.css's default "safe center" is right for a short, static
+           setup screen, but the player-count stepper makes the setup form's
+           height change interactively -- centering re-centers the *whole*
+           card on every add/remove, so the top edge jumps up and down even
+           though nothing above it changed. Anchoring to the top instead
+           means adding a player only ever grows the card downward. */
+        body.scrollable {
+            justify-content: flex-start;
+        }
+
         /* shared.css only sets a min-height on body, which is right for
            other games (Boggle intentionally grows taller than the viewport
-           post-game). Here we want the opposite: a hard ceiling so the
-           scorecard below has a real budget to shrink against instead of
-           just pushing the whole page taller than the screen. */
-        body.scrollable {
+           post-game) and for this page's own setup screen (a min-height
+           lets body grow past the viewport when there are enough players
+           that the form needs it, so the page scrolls normally and the
+           Start Game button stays reachable below the fixed footer).
+           Once a game is in progress we want the opposite: a hard ceiling
+           so the scorecard below has a real budget to shrink against
+           instead of just pushing the whole page taller than the screen.
+           Scoped to .in-game (toggled in startBtn/newGameBtn below) so it
+           doesn't also clamp the setup screen. */
+        body.scrollable.in-game {
             height: 100dvh;
         }
 
@@ -436,16 +452,20 @@
 
         // ================= Setup screen =================
 
-        function renderPlayerNameInputs() {
-            playerNamesEl.innerHTML = '';
-            for (let i = 0; i < playerCount; i++) {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.placeholder = 'Player ' + (i + 1) + ' name';
-                input.maxLength = 16;
-                input.dataset.index = i;
-                playerNamesEl.appendChild(input);
-            }
+        // Tracks how many name inputs actually exist in the DOM, separate
+        // from playerCount -- setPlayerCount only adds/removes the
+        // difference at the end of the list, rather than rebuilding every
+        // input from scratch, so typed names in the untouched fields survive
+        // the player-count stepper.
+        let renderedPlayerCount = 0;
+
+        function addPlayerNameInput(i) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Player ' + (i + 1) + ' name';
+            input.maxLength = 16;
+            input.dataset.index = i;
+            playerNamesEl.appendChild(input);
         }
 
         function setPlayerCount(n) {
@@ -453,7 +473,15 @@
             playerCountValueEl.textContent = playerCount;
             playerCountDownBtn.disabled = playerCount <= MIN_PLAYERS;
             playerCountUpBtn.disabled = playerCount >= MAX_PLAYERS;
-            renderPlayerNameInputs();
+
+            for (let i = renderedPlayerCount; i < playerCount; i++) {
+                addPlayerNameInput(i);
+            }
+            for (let i = renderedPlayerCount; i > playerCount; i--) {
+                const input = playerNamesEl.querySelector('input[data-index="' + (i - 1) + '"]');
+                if (input) input.remove();
+            }
+            renderedPlayerCount = playerCount;
         }
 
         playerCountDownBtn.addEventListener('click', () => setPlayerCount(playerCount - 1));
@@ -477,6 +505,7 @@
             setupEl.classList.add('hidden');
             gameEl.classList.remove('hidden');
             newGameBtn.classList.remove('hidden');
+            document.body.classList.add('in-game');
             buildDice();
             startTurn();
             buildScorecard();
@@ -487,6 +516,7 @@
             gameEl.classList.add('hidden');
             newGameBtn.classList.add('hidden');
             setupEl.classList.remove('hidden');
+            document.body.classList.remove('in-game');
         });
 
         // ================= Dice =================
