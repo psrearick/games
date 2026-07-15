@@ -414,3 +414,133 @@ dialog.rules-dialog::backdrop {
     padding: clamp(20px, 3vmin, 36px);
     width: min(94vw, 460px);
 }
+
+/* ---- Fullscreen / chrome toggle (button-bar's rightmost button on pages
+   that opt in) ----
+   Clicking it sets body.chrome-hidden, which does two things: shrinks
+   body's own reserved padding-top/padding-bottom (the space set aside for
+   the fixed button-bar/footer) down to just the safe-area insets, and fades
+   the bar/footer down to a transparent, empty-looking strip -- they stay
+   position: fixed and in the DOM (nothing needs to escape into a separate
+   layer or fight a transform-created containing block), just visually and
+   spatially out of the way. The toggle button itself is excluded from that
+   fade, via :not(#chrome-toggle-btn) below, so it keeps floating in the
+   same corner, low-contrast until hovered, as the one way back.
+   The padding/background changes are given a deliberate transition despite
+   the site-wide *, *::before, *::after { transition: none !important; }
+   reset further up -- an instant reflow here reads as the page jumping the
+   instant the bars vanish, which is worse than the brief motion this trades
+   it for. Scoped to specific selectors with !important so it wins over both
+   that reset and (for padding) any other page-specific padding rule, e.g.
+   boggle's own body.scrollable.in-game padding-bottom -- chrome-hidden
+   should always collapse fully, even mid-game. */
+body.scrollable {
+    transition: padding-top 0.4s ease, padding-bottom 0.4s ease !important;
+}
+
+body.scrollable.chrome-hidden {
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+}
+
+.button-bar,
+.site-footer {
+    transition: background-color 0.4s ease, border-color 0.4s ease !important;
+}
+
+body.chrome-hidden .button-bar {
+    background: transparent;
+    border-bottom-color: transparent;
+    /* The bar's own box still sits over the top of the viewport at its
+       normal (fixed) size -- once body's padding-top collapses, page
+       content slides up underneath it, and without this it would silently
+       eat clicks/taps meant for that content even though nothing is
+       visibly there. .fullscreen-toggle opts back in below. */
+    pointer-events: none;
+}
+
+body.chrome-hidden .site-footer {
+    background: transparent;
+    border-top-color: transparent;
+    pointer-events: none;
+}
+
+body.chrome-hidden .fullscreen-toggle {
+    pointer-events: auto;
+}
+
+.button-bar .left,
+.button-bar .right > button:not(#chrome-toggle-btn),
+.site-footer > * {
+    transition: opacity 0.3s ease !important;
+}
+
+body.chrome-hidden .button-bar .left,
+body.chrome-hidden .button-bar .right > button:not(#chrome-toggle-btn),
+body.chrome-hidden .site-footer > * {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.fullscreen-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Square rather than text-button shaped, but close enough to the other
+       buttons' rendered height (padding clamp(7,1.1vmin,13) * 2 + text) to
+       sit comfortably in the same row. */
+    width: clamp(34px, 7vmin, 46px);
+    height: clamp(34px, 7vmin, 46px);
+    padding: 0;
+    color: var(--ink);
+}
+
+.fullscreen-toggle svg {
+    display: block;
+    width: clamp(18px, 3.4vmin, 24px);
+    height: clamp(18px, 3.4vmin, 24px);
+    transition: opacity 0.2s ease !important;
+}
+
+.fullscreen-toggle .icon-collapse {
+    display: none;
+}
+
+body.chrome-hidden .fullscreen-toggle .icon-expand {
+    display: none;
+}
+
+body.chrome-hidden .fullscreen-toggle .icon-collapse {
+    display: block;
+}
+
+/* Only once the rest of the bar has faded away does this button itself go
+   low-contrast -- while the bar is still visible it should look like a
+   normal peer of Home/Rules/etc, not like it's missing a background. */
+body.chrome-hidden .fullscreen-toggle {
+    background: transparent;
+    border-color: transparent;
+}
+
+body.chrome-hidden .fullscreen-toggle svg {
+    opacity: 0.45;
+}
+
+body.chrome-hidden .fullscreen-toggle:hover svg,
+body.chrome-hidden .fullscreen-toggle:focus-visible svg,
+body.chrome-hidden .fullscreen-toggle:active svg {
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    body.scrollable,
+    .button-bar,
+    .site-footer,
+    .button-bar .left,
+    .button-bar .right>button,
+    .site-footer>*,
+    .fullscreen-toggle svg {
+        transition: none !important;
+    }
+}

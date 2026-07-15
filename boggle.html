@@ -517,6 +517,23 @@
         <div class="right">
             <button id="end-game-btn" class="hidden">End Game</button>
             <button id="new-game-btn" class="hidden">New Game</button>
+            <button type="button" id="chrome-toggle-btn" class="fullscreen-toggle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <g class="icon-expand">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                        <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                        <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                        <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+                    </g>
+                    <g class="icon-collapse">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                        <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                        <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                        <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+                    </g>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -638,8 +655,12 @@
         // media query in shared.css) only while there are actually enough
         // visible buttons to need it, rather than shrinking every page's
         // bar at this width regardless of how many buttons it has.
+        // #chrome-toggle-btn is excluded -- it's always present (not
+        // conditionally shown/hidden like the game buttons) and small/
+        // icon-only, so it shouldn't count toward the same crowding
+        // threshold as a full text button.
         function updateButtonBarDensity() {
-            const visibleCount = buttonBarEl.querySelectorAll('button:not(.hidden)').length;
+            const visibleCount = buttonBarEl.querySelectorAll('button:not(.hidden):not(#chrome-toggle-btn)').length;
             buttonBarEl.classList.toggle('many-buttons', visibleCount >= 4);
         }
 
@@ -1341,6 +1362,7 @@
     </footer>
 
     <script src="theme.js"></script>
+    <script src="chrome-toggle.js"></script>
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {
