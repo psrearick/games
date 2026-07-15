@@ -34,6 +34,32 @@
             display: none !important;
         }
 
+        /* ---- Fullscreen override for this page ----
+           shared.css's default chrome-hidden state keeps a modest icon-sized
+           margin on both bars and fades the whole bar/footer away. Family
+           Feud needs different behavior per bar: the bottom bar has nothing
+           useful mid-game, so it still collapses and hides fully; the top
+           bar has to stay put (the game shouldn't jump) and keep Swap Team
+           + Skip Question reachable, since those are the two controls a
+           host needs most while playing fullscreen -- so its padding
+           doesn't collapse at all, and it stays visible/interactive instead
+           of fading like the rest of the site. */
+        body.scrollable.chrome-hidden {
+            padding-top: clamp(80px, 10vmin, 96px) !important;
+            padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        }
+
+        body.chrome-hidden .button-bar {
+            background: var(--bg) !important;
+            border-bottom-color: var(--die-border) !important;
+            pointer-events: auto !important;
+        }
+
+        body.chrome-hidden .button-bar .right>.chrome-keep {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
         /* ---- Setup screen ---- */
         .team-inputs {
             display: flex;
@@ -162,12 +188,26 @@
             font-size: clamp(26px, 4.4vmin, 42px);
         }
 
+        .round-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
         .round-indicator {
             color: var(--ink);
             opacity: 0.75;
             font-size: clamp(12px, 1.6vmin, 15px);
             letter-spacing: 0.05em;
             text-align: center;
+        }
+
+        .pot {
+            color: var(--bar);
+            font-weight: bold;
+            font-size: clamp(16px, 2.4vmin, 22px);
         }
 
         .prompt {
@@ -177,6 +217,9 @@
             font-size: clamp(17px, 2.8vmin, 28px);
             letter-spacing: 0.02em;
             width: min(94vw, 900px);
+            /* Extra room on top of #game's own gap -- see the spacing note
+               on .board/.strikes below. */
+            margin-top: clamp(8px, 1.8vmin, 20px);
         }
 
         .board {
@@ -184,6 +227,7 @@
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: clamp(8px, 1.4vmin, 16px);
             width: min(94vw, 900px);
+            margin-top: clamp(8px, 1.8vmin, 20px);
         }
 
         .tile {
@@ -226,10 +270,6 @@
             opacity: 1;
         }
 
-        .tile.manual-pending .tile-content {
-            opacity: 0.6;
-        }
-
         .tile-text {
             color: var(--ink);
             font-weight: bold;
@@ -249,18 +289,12 @@
             }
         }
 
-        .play-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: clamp(20px, 4vmin, 48px);
-            flex-wrap: wrap;
-        }
-
         .strikes {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: clamp(10px, 1.8vmin, 16px);
+            margin-top: clamp(10px, 2.2vmin, 24px);
         }
 
         .strikes-label {
@@ -270,23 +304,29 @@
             letter-spacing: 0.05em;
         }
 
+        /* Bigger, square marks rather than small dots -- easier to read at
+           TV distance -- and the strike itself is an "X" glyph rather than
+           just a filled/empty color swap, so it reads clearly even for a
+           colorblind viewer. */
         .strike-mark {
-            width: clamp(14px, 2.2vmin, 20px);
-            height: clamp(14px, 2.2vmin, 20px);
-            border-radius: 50%;
+            width: clamp(30px, 5.2vmin, 44px);
+            height: clamp(30px, 5.2vmin, 44px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: clamp(4px, 0.8vmin, 8px);
             border: 2px solid var(--die-border);
             background: var(--die);
+            color: var(--ink);
+            opacity: 0.35;
+            font-weight: bold;
+            font-size: clamp(18px, 3.2vmin, 26px);
         }
 
         .strike-mark.active {
-            background: var(--warn);
+            opacity: 1;
             border-color: var(--warn);
-        }
-
-        .pot {
-            color: var(--bar);
-            font-weight: bold;
-            font-size: clamp(16px, 2.4vmin, 22px);
+            color: var(--warn);
         }
 
         .message {
@@ -348,14 +388,10 @@
             line-height: 1.5;
         }
 
-        .final-scores {
-            display: flex;
-            gap: clamp(20px, 4vmin, 48px);
-        }
-
         #confirm-dialog-message {
             color: var(--ink);
-            line-height: 1.5;
+            font-size: clamp(16px, 2.1vmin, 19px);
+            line-height: 1.6;
             text-align: left;
         }
 
@@ -373,7 +409,10 @@
             <button type="button" id="rules-btn">Rules</button>
         </div>
         <div class="right">
-            <button id="newGameBtn" class="hidden">New Game</button>
+            <button type="button" id="manualRevealBtn" class="btn-danger hidden">Reveal</button>
+            <button type="button" id="skipQuestionBtn" class="chrome-keep hidden">Skip Question</button>
+            <button type="button" id="swapControlBtn" class="chrome-keep hidden">Swap Team</button>
+            <button type="button" id="endGameBtn" class="hidden">End Game</button>
             <button type="button" id="chrome-toggle-btn" class="fullscreen-toggle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round" aria-hidden="true">
@@ -408,6 +447,8 @@
                 guess against the hidden list and reveals a tile only when it finds a match.</li>
             <li>Type whatever a player calls out and press Submit (or Enter). "Checking..." means the judge is
                 thinking; the input is disabled until it answers.</li>
+            <li><strong>Swap Team</strong> in the top bar flips who's currently up, in case the automatic alternation
+                needs a manual correction.</li>
         </ul>
 
         <h3>Full Rules</h3>
@@ -421,11 +462,11 @@
                 the stealing team; a miss lets the controlling team keep it.</li>
             <li>Once every tile is revealed (or the steal is resolved), the round ends, the pot is awarded, and any
                 remaining answers are shown before moving on.</li>
-            <li><strong>Undo</strong> reverts the single most recent reveal or strike — use it for a misclick or a
-                clearly wrong judge call.</li>
-            <li>If the judge is unreachable for a while, "Reveal answers &amp; finish this round by eye" shows the
-                full hidden list so the host can finish scoring the round by ear. It intentionally ends secrecy for
-                that question, so it's meant as a last resort.</li>
+            <li>Don't like the current question, or already played it before? <strong>Skip Question</strong> in the
+                top bar moves on to a new one — no scoring change.</li>
+            <li>If the judge is unreachable for a while, <strong>Reveal</strong> in the top bar shows the full hidden
+                list so the host can finish scoring the round by ear. It intentionally ends secrecy for that
+                question, so it's meant as a last resort.</li>
         </ul>
     </dialog>
 
@@ -475,7 +516,10 @@
                 <div class="team-name" id="teamCardName0">Team 1</div>
                 <div class="team-score" id="teamCardScore0">0</div>
             </div>
-            <div class="round-indicator" id="roundIndicator">Round 1 of 5</div>
+            <div class="round-column">
+                <div class="round-indicator" id="roundIndicator">Round 1 of 5</div>
+                <div class="pot" id="pot">Pot: 0</div>
+            </div>
             <div class="team-card" id="teamCard1">
                 <div class="team-name" id="teamCardName1">Team 2</div>
                 <div class="team-score" id="teamCardScore1">0</div>
@@ -486,30 +530,19 @@
 
         <div class="board" id="board"></div>
 
-        <div class="play-status">
-            <div class="strikes" id="strikes">
-                <span class="strikes-label">Strikes</span>
-                <span class="strike-mark" data-n="0"></span>
-                <span class="strike-mark" data-n="1"></span>
-                <span class="strike-mark" data-n="2"></span>
-            </div>
-            <div class="pot" id="pot">Pot: 0</div>
+        <div class="strikes" id="strikes">
+            <span class="strikes-label">Strikes</span>
+            <span class="strike-mark" data-n="0">&times;</span>
+            <span class="strike-mark" data-n="1">&times;</span>
+            <span class="strike-mark" data-n="2">&times;</span>
         </div>
 
         <div class="message" id="message" aria-live="polite"></div>
 
         <form class="guess-form" id="guessForm">
-            <input type="text" id="guessInput" placeholder="Type the guess called out..." autocomplete="off">
+            <input type="text" id="guessInput" placeholder="Type the answer..." autocomplete="off">
             <button type="submit" id="submitBtn">Submit</button>
         </form>
-
-        <div class="controls" id="playControls">
-            <button type="button" id="undoBtn" disabled>Undo</button>
-            <button type="button" id="swapControlBtn">Swap Who's Up</button>
-            <button type="button" id="manualRevealBtn" class="btn-danger">Reveal answers &amp; finish this round by
-                eye</button>
-            <button type="button" id="endGameBtn">End Game</button>
-        </div>
 
         <div class="panel hidden" id="manualPanel">
             <div class="panel-title">Finish this round by eye</div>
@@ -530,16 +563,6 @@
 
         <div class="panel hidden" id="gameEndPanel">
             <div class="panel-title">Final Score</div>
-            <div class="final-scores">
-                <div class="team-card" id="finalCard0">
-                    <div class="team-name" id="finalName0"></div>
-                    <div class="team-score" id="finalScore0"></div>
-                </div>
-                <div class="team-card" id="finalCard1">
-                    <div class="team-name" id="finalName1"></div>
-                    <div class="team-score" id="finalScore1"></div>
-                </div>
-            </div>
             <div class="panel-title" id="winnerTitle"></div>
         </div>
     </div>
@@ -561,8 +584,8 @@
         const roundsValue = document.getElementById('roundsValue');
         const startBtn = document.getElementById('startBtn');
         const setupStatus = document.getElementById('setupStatus');
-        const newGameBtn = document.getElementById('newGameBtn');
 
+        const buttonBarEl = document.querySelector('.button-bar');
         const teamCard0 = document.getElementById('teamCard0');
         const teamCard1 = document.getElementById('teamCard1');
         const teamCardName0 = document.getElementById('teamCardName0');
@@ -572,17 +595,17 @@
         const roundIndicator = document.getElementById('roundIndicator');
         const promptEl = document.getElementById('prompt');
         const boardEl = document.getElementById('board');
+        const strikesEl = document.getElementById('strikes');
         const strikeMarks = document.querySelectorAll('.strike-mark');
         const potEl = document.getElementById('pot');
         const messageEl = document.getElementById('message');
         const guessForm = document.getElementById('guessForm');
         const guessInput = document.getElementById('guessInput');
         const submitBtn = document.getElementById('submitBtn');
-        const undoBtn = document.getElementById('undoBtn');
         const swapControlBtn = document.getElementById('swapControlBtn');
+        const skipQuestionBtn = document.getElementById('skipQuestionBtn');
         const manualRevealBtn = document.getElementById('manualRevealBtn');
         const endGameBtn = document.getElementById('endGameBtn');
-        const playControls = document.getElementById('playControls');
         const manualPanel = document.getElementById('manualPanel');
         const awardManual0 = document.getElementById('awardManual0');
         const awardManual1 = document.getElementById('awardManual1');
@@ -590,10 +613,6 @@
         const roundEndTitle = document.getElementById('roundEndTitle');
         const nextRoundBtn = document.getElementById('nextRoundBtn');
         const gameEndPanel = document.getElementById('gameEndPanel');
-        const finalName0 = document.getElementById('finalName0');
-        const finalName1 = document.getElementById('finalName1');
-        const finalScore0 = document.getElementById('finalScore0');
-        const finalScore1 = document.getElementById('finalScore1');
         const winnerTitle = document.getElementById('winnerTitle');
 
         // ================= State =================
@@ -622,25 +641,43 @@
             localStorage.removeItem(STORAGE_KEY);
         }
 
-        function snapshot() {
-            return JSON.parse(JSON.stringify({
-                teams: state.teams,
-                revealed: state.revealed,
-                strikes: state.strikes,
-                pot: state.pot,
-                controllingTeam: state.controllingTeam,
-                phase: state.phase,
-            }));
+        // Toggles the compact button-bar sizing (see the .many-buttons media
+        // query in shared.css) only while there are actually enough visible
+        // buttons to need it. #chrome-toggle-btn is excluded -- it's always
+        // present and icon-only, so it shouldn't count toward the same
+        // crowding threshold as a full text button.
+        function updateButtonBarDensity() {
+            const visibleCount = buttonBarEl.querySelectorAll('button:not(.hidden):not(#chrome-toggle-btn)').length;
+            buttonBarEl.classList.toggle('many-buttons', visibleCount >= 4);
         }
 
-        function restoreSnapshot(snap) {
-            state.teams = snap.teams;
-            state.revealed = snap.revealed;
-            state.strikes = snap.strikes;
-            state.pot = snap.pot;
-            state.controllingTeam = snap.controllingTeam;
-            state.phase = snap.phase;
+        // ================= Confirm dialog =================
+        // Replaces window.confirm() -- a native dialog would break the site's
+        // muted, low-contrast look with a bright OS-default modal.
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmMessage = document.getElementById('confirm-dialog-message');
+        const confirmOk = document.getElementById('confirm-dialog-ok');
+        const confirmCancel = document.getElementById('confirm-dialog-cancel');
+        let confirmResolve = null;
+
+        function showConfirm(message) {
+            confirmMessage.textContent = message;
+            confirmDialog.showModal();
+            confirmDialog.focus();
+            return new Promise((resolve) => { confirmResolve = resolve; });
         }
+
+        confirmOk.addEventListener('click', () => {
+            confirmDialog.close();
+            if (confirmResolve) confirmResolve(true);
+        });
+        confirmCancel.addEventListener('click', () => {
+            confirmDialog.close();
+            if (confirmResolve) confirmResolve(false);
+        });
+        confirmDialog.addEventListener('cancel', () => {
+            if (confirmResolve) confirmResolve(false);
+        });
 
         // ================= Setup screen =================
         function loadQuestionList() {
@@ -705,7 +742,6 @@
                 pot: 0,
                 controllingTeam: 0,
                 phase: 'PLAY',
-                lastAction: null,
             };
             persist();
             enterGameScreen();
@@ -715,51 +751,19 @@
         function enterGameScreen() {
             setupEl.classList.add('hidden');
             gameEl.classList.remove('hidden');
-            newGameBtn.classList.remove('hidden');
             render();
         }
 
         function enterSetupScreen() {
             gameEl.classList.add('hidden');
             setupEl.classList.remove('hidden');
-            newGameBtn.classList.add('hidden');
+            manualRevealBtn.classList.add('hidden');
+            skipQuestionBtn.classList.add('hidden');
+            swapControlBtn.classList.add('hidden');
+            endGameBtn.classList.add('hidden');
+            updateButtonBarDensity();
             if (!questionList) loadQuestionList();
         }
-
-        newGameBtn.addEventListener('click', async () => {
-            if (!await showConfirm('Start a new game? This clears the current scores and board.')) return;
-            state = null;
-            clearPersisted();
-            enterSetupScreen();
-        });
-
-        // ================= Confirm dialog =================
-        // Replaces window.confirm() -- a native dialog would break the site's
-        // muted, low-contrast look with a bright OS-default modal.
-        const confirmDialog = document.getElementById('confirm-dialog');
-        const confirmMessage = document.getElementById('confirm-dialog-message');
-        const confirmOk = document.getElementById('confirm-dialog-ok');
-        const confirmCancel = document.getElementById('confirm-dialog-cancel');
-        let confirmResolve = null;
-
-        function showConfirm(message) {
-            confirmMessage.textContent = message;
-            confirmDialog.showModal();
-            confirmDialog.focus();
-            return new Promise((resolve) => { confirmResolve = resolve; });
-        }
-
-        confirmOk.addEventListener('click', () => {
-            confirmDialog.close();
-            if (confirmResolve) confirmResolve(true);
-        });
-        confirmCancel.addEventListener('click', () => {
-            confirmDialog.close();
-            if (confirmResolve) confirmResolve(false);
-        });
-        confirmDialog.addEventListener('cancel', () => {
-            if (confirmResolve) confirmResolve(false);
-        });
 
         // ================= Rendering =================
         function currentQuestion() {
@@ -818,7 +822,7 @@
 
             promptEl.classList.toggle('hidden', state.phase === 'GAME_END');
             boardEl.classList.toggle('hidden', state.phase === 'GAME_END');
-            document.getElementById('strikes').classList.toggle('hidden', state.phase === 'GAME_END');
+            strikesEl.classList.toggle('hidden', state.phase === 'GAME_END');
             potEl.classList.toggle('hidden', state.phase === 'GAME_END');
 
             strikeMarks.forEach((mark, i) => {
@@ -826,15 +830,17 @@
             });
             potEl.textContent = 'Pot: ' + state.pot;
 
-            undoBtn.disabled = !state.lastAction;
-
             const inPlay = state.phase === 'PLAY' || state.phase === 'STEAL';
             guessForm.classList.toggle('hidden', !inPlay);
-            playControls.classList.toggle('hidden', !inPlay);
+            manualRevealBtn.classList.toggle('hidden', !inPlay);
+            skipQuestionBtn.classList.toggle('hidden', !inPlay);
             swapControlBtn.classList.toggle('hidden', state.phase !== 'PLAY');
+            endGameBtn.classList.remove('hidden');
+            endGameBtn.textContent = state.phase === 'GAME_END' ? 'New Game' : 'End Game';
             manualPanel.classList.toggle('hidden', state.phase !== 'MANUAL');
             roundEndPanel.classList.toggle('hidden', state.phase !== 'ROUND_END');
             gameEndPanel.classList.toggle('hidden', state.phase !== 'GAME_END');
+            updateButtonBarDensity();
 
             if (state.phase === 'MANUAL') {
                 awardManual0.textContent = 'Award pot to ' + state.teams[0].name;
@@ -842,10 +848,6 @@
             }
 
             if (state.phase === 'GAME_END') {
-                finalName0.textContent = state.teams[0].name;
-                finalName1.textContent = state.teams[1].name;
-                finalScore0.textContent = state.teams[0].score;
-                finalScore1.textContent = state.teams[1].score;
                 if (state.teams[0].score === state.teams[1].score) {
                     winnerTitle.textContent = "It's a tie!";
                 } else {
@@ -904,8 +906,6 @@
         }
 
         function handleJudgeResult(result) {
-            state.lastAction = snapshot();
-
             const matchIndex = result.matchIndex;
             const isNewMatch = matchIndex !== null && matchIndex !== undefined && !state.revealed[matchIndex];
 
@@ -962,7 +962,7 @@
             });
         }
 
-        nextRoundBtn.addEventListener('click', () => {
+        function advanceQuestion() {
             state.currentQuestionIndex += 1;
             if (state.currentQuestionIndex >= state.questions.length) {
                 state.phase = 'GAME_END';
@@ -972,27 +972,32 @@
                 state.pot = 0;
                 state.controllingTeam = state.currentQuestionIndex % 2;
                 state.phase = 'PLAY';
-                state.lastAction = null;
                 setMessage('');
             }
             persist();
             render();
+        }
+
+        nextRoundBtn.addEventListener('click', advanceQuestion);
+
+        skipQuestionBtn.addEventListener('click', async () => {
+            if (inFlight) return;
+            if (!await showConfirm('Skip this question? Any points or strikes so far on it will be lost.')) return;
+            advanceQuestion();
         });
 
+        // ================= End game / new game =================
         endGameBtn.addEventListener('click', async () => {
+            if (state.phase === 'GAME_END') {
+                if (!await showConfirm('Start a new game? This clears the current scores and board.')) return;
+                state = null;
+                clearPersisted();
+                enterSetupScreen();
+                return;
+            }
+            if (inFlight) return;
             if (!await showConfirm('End the game now and show final scores?')) return;
             state.phase = 'GAME_END';
-            state.lastAction = null;
-            persist();
-            render();
-        });
-
-        // ================= Undo =================
-        undoBtn.addEventListener('click', () => {
-            if (!state.lastAction) return;
-            restoreSnapshot(state.lastAction);
-            state.lastAction = null;
-            setMessage('');
             persist();
             render();
         });
@@ -1016,7 +1021,6 @@
             render();
             apiCall('reveal', { questionId: currentQuestion().id }).then((answers) => {
                 inFlight = false;
-                state.lastAction = snapshot();
                 answers.forEach((a) => {
                     state.revealed[a.index] = { text: a.text, points: a.points };
                 });
@@ -1032,7 +1036,6 @@
         }
 
         function awardManual(teamIndex) {
-            state.lastAction = snapshot();
             state.teams[teamIndex].score += state.pot;
             state.pot = 0;
             state.phase = 'ROUND_END';

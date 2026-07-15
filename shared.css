@@ -318,8 +318,8 @@ dialog.rules-dialog {
     color: var(--ink);
     border: 2px solid var(--die-border);
     border-radius: 10px;
-    width: min(94vw, 560px);
-    max-width: min(94vw, 560px);
+    width: min(94vw, 720px);
+    max-width: min(94vw, 720px);
     max-height: min(88vh, 720px);
     overflow-y: auto;
     padding: clamp(18px, 3vmin, 30px);
@@ -357,7 +357,7 @@ dialog.rules-dialog::backdrop {
     color: var(--bar);
     font-weight: bold;
     letter-spacing: 0.06em;
-    font-size: clamp(16px, 2.2vmin, 20px);
+    font-size: clamp(19px, 2.7vmin, 25px);
 }
 
 .rules-dialog-close {
@@ -379,7 +379,7 @@ dialog.rules-dialog::backdrop {
 
 .rules-dialog h3 {
     color: var(--bar);
-    font-size: clamp(14px, 1.8vmin, 17px);
+    font-size: clamp(17px, 2.3vmin, 21px);
     letter-spacing: 0.05em;
     margin-top: 14px;
     margin-bottom: 8px;
@@ -398,8 +398,8 @@ dialog.rules-dialog::backdrop {
 
 .rules-dialog li {
     color: var(--ink);
-    font-size: clamp(13px, 1.6vmin, 15px);
-    line-height: 1.55;
+    font-size: clamp(16px, 2vmin, 19px);
+    line-height: 1.6;
 }
 
 /* ---- Setup panel (used by any game with a pre-game options screen) ---- */
@@ -419,13 +419,20 @@ dialog.rules-dialog::backdrop {
    that opt in) ----
    Clicking it sets body.chrome-hidden, which does two things: shrinks
    body's own reserved padding-top/padding-bottom (the space set aside for
-   the fixed button-bar/footer) down to just the safe-area insets, and fades
+   the fixed button-bar/footer) down to a small icon-sized margin, and fades
    the bar/footer down to a transparent, empty-looking strip -- they stay
    position: fixed and in the DOM (nothing needs to escape into a separate
    layer or fight a transform-created containing block), just visually and
    spatially out of the way. The toggle button itself is excluded from that
    fade, via :not(#chrome-toggle-btn) below, so it keeps floating in the
    same corner, low-contrast until hovered, as the one way back.
+   The collapsed padding-top intentionally isn't just the safe-area inset --
+   it matches the button-bar's own (non-safe-area) padding-top, i.e. exactly
+   where the fullscreen icon's top edge sits, so collapsing the chrome
+   doesn't yank game content all the way to the top of the screen; the top
+   of the game instead lines up with the top of the (still-visible, low-
+   contrast) icon. padding-bottom keeps a similarly modest margin rather
+   than collapsing to just the safe area.
    The padding/background changes are given a deliberate transition despite
    the site-wide *, *::before, *::after { transition: none !important; }
    reset further up -- an instant reflow here reads as the page jumping the
@@ -433,14 +440,14 @@ dialog.rules-dialog::backdrop {
    it for. Scoped to specific selectors with !important so it wins over both
    that reset and (for padding) any other page-specific padding rule, e.g.
    boggle's own body.scrollable.in-game padding-bottom -- chrome-hidden
-   should always collapse fully, even mid-game. */
+   should always collapse to this same small margin, even mid-game. */
 body.scrollable {
     transition: padding-top 0.4s ease, padding-bottom 0.4s ease !important;
 }
 
 body.scrollable.chrome-hidden {
-    padding-top: env(safe-area-inset-top, 0px) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 .button-bar,
