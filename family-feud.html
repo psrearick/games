@@ -35,39 +35,13 @@
         }
 
         /* ---- Fullscreen override for this page ----
-           shared.css's default chrome-hidden state keeps a modest icon-sized
-           margin on both bars and fades the whole bar/footer away. Family
-           Feud needs different behavior per bar: the bottom bar has nothing
-           useful mid-game, so it still collapses and hides fully; the top
-           bar has to stay put (the game shouldn't jump) and keep Swap Team
-           + Skip Question reachable, since those are the two controls a
-           host needs most while playing fullscreen -- so its padding
-           doesn't collapse at all, and it stays visible/interactive instead
-           of fading like the rest of the site. */
+           The top bar uses shared.css's default chrome-hidden behavior (a
+           modest icon-aligned margin, everything fades including Swap Team
+           and Skip Question). The bottom bar has nothing useful mid-game
+           though, so it still collapses and hides fully instead of the
+           shared default's smaller margin. */
         body.scrollable.chrome-hidden {
-            padding-top: clamp(80px, 10vmin, 96px) !important;
             padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-        }
-
-        body.chrome-hidden .button-bar {
-            background: var(--bg) !important;
-            border-bottom-color: var(--die-border) !important;
-            pointer-events: auto !important;
-        }
-
-        /* shared.css's chrome-hidden collapse (max-width/padding/border to 0)
-           targets every .right button so faded neighbors don't leave gaps --
-           it doesn't know about .chrome-keep, so it has to be countered here
-           on every property it sets, not just opacity, or these buttons would
-           stay "visible" but squashed to zero width. */
-        body.chrome-hidden .button-bar .right>.chrome-keep {
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            max-width: 240px !important;
-            padding-left: clamp(18px, 2.8vmin, 34px) !important;
-            padding-right: clamp(18px, 2.8vmin, 34px) !important;
-            border-left-width: 2px !important;
-            border-right-width: 2px !important;
         }
 
         /* ---- Setup screen ---- */
@@ -173,23 +147,24 @@
             flex-wrap: wrap;
         }
 
+        /* Plain text rather than a bordered card -- the scoreboard is
+           status, not a control, and giving it the same boxed treatment as
+           buttons/tiles was part of why the screen read as a wall of
+           identical gray rectangles. */
         .team-card {
-            background: var(--die);
-            border: 2px solid var(--die-border);
-            border-radius: 10px;
-            padding: clamp(8px, 1.4vmin, 16px) clamp(18px, 2.8vmin, 30px);
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            min-width: 140px;
+            min-width: 120px;
+            padding: 4px 0;
         }
 
-        /* Controlling team gets the accent border rather than a filled
-           highlight -- keeps the "who's up" cue readable without adding a
-           second saturated fill color next to the scores. */
-        .team-card.controlling {
-            border-color: var(--accent);
+        /* Controlling team gets the accent color on its name instead of a
+           border -- keeps the "who's up" cue readable without reintroducing
+           a box. */
+        .team-card.controlling .team-name {
+            color: var(--accent);
         }
 
         .team-name {
@@ -228,24 +203,41 @@
             font-size: clamp(16px, 2.4vmin, 22px);
         }
 
+        /* Groups the prompt + tile board into one visually contained zone,
+           separate from the scoreboard above and the strikes/controls below
+           -- previously everything sat directly on the page background at
+           equal weight, so there was no sense of "this is the board" versus
+           "this is a status readout" versus "this is a control." The panel
+           background sits between the page background and the tiles'
+           fill (see the tile-hierarchy note below) so tiles read as sitting
+           on top of the panel rather than blending into it. */
+        .board-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(14px, 2.2vmin, 24px);
+            background: oklch(from var(--bg) calc(l + 0.035) c h);
+            border: 2px solid var(--die-border);
+            border-radius: 12px;
+            padding: clamp(16px, 2.6vmin, 30px);
+            width: min(94vw, 900px);
+            margin-top: clamp(8px, 1.8vmin, 20px);
+        }
+
         .prompt {
             color: var(--bar);
             font-weight: bold;
             text-align: center;
             font-size: clamp(17px, 2.8vmin, 28px);
             letter-spacing: 0.02em;
-            width: min(94vw, 900px);
-            /* Extra room on top of #game's own gap -- see the spacing note
-               on .board/.strikes below. */
-            margin-top: clamp(8px, 1.8vmin, 20px);
+            width: 100%;
         }
 
         .board {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: clamp(8px, 1.4vmin, 16px);
-            width: min(94vw, 900px);
-            margin-top: clamp(8px, 1.8vmin, 20px);
+            width: 100%;
         }
 
         .tile {
@@ -347,6 +339,28 @@
             color: var(--warn);
         }
 
+        /* Skip Question / Swap Team are used at most once, right at the
+           start of a turn -- tucking them behind this disclosure instead of
+           always-on buttons keeps them out of the way the rest of the time.
+           Plain text rather than a bordered button so it doesn't compete
+           visually with the buttons it reveals. */
+        .link-toggle {
+            background: none;
+            border: none;
+            padding: 4px 0;
+            color: var(--ink);
+            opacity: 0.7;
+            font-weight: bold;
+            font-size: clamp(13px, 1.7vmin, 16px);
+            letter-spacing: 0.04em;
+            cursor: pointer;
+        }
+
+        .link-toggle:hover,
+        .link-toggle:focus-visible {
+            opacity: 1;
+        }
+
         .message {
             min-height: 1.7em;
             color: var(--ink);
@@ -371,9 +385,17 @@
             width: min(94vw, 560px);
         }
 
+        /* Recessed (page-background) fill with an accent border, instead of
+           the shared raised --btn tone every button/tile uses -- this is the
+           one field the host actually types in every turn, so it should read
+           as distinct from the wall of buttons rather than as one more of
+           them. */
         .guess-form input[type="text"] {
             flex: 1;
             min-width: 200px;
+            background: var(--bg);
+            border-color: var(--accent);
+            font-size: clamp(15px, 2.1vmin, 20px);
         }
 
         .btn-danger {
@@ -467,8 +489,6 @@
         </div>
         <div class="right">
             <button type="button" id="manualRevealBtn" class="btn-danger hidden">Reveal</button>
-            <button type="button" id="skipQuestionBtn" class="chrome-keep hidden">Skip Question</button>
-            <button type="button" id="swapControlBtn" class="chrome-keep hidden">Swap Team</button>
             <button type="button" id="endGameBtn" class="hidden">End Game</button>
             <button type="button" id="chrome-toggle-btn" class="fullscreen-toggle">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -504,8 +524,8 @@
                 guess against the hidden list and reveals a tile only when it finds a match.</li>
             <li>Type whatever a player calls out and press Submit (or Enter). "Checking..." means the judge is
                 thinking; the input is disabled until it answers.</li>
-            <li><strong>Swap Team</strong> in the top bar flips who's currently up, in case you want the two teams'
-                turns reordered within the current round.</li>
+            <li>Tap <strong>Turn options</strong> above the guess box to reveal Skip Question and Swap Team --
+                they're tucked away since you'd only need them once, right at the start of a turn.</li>
         </ul>
 
         <h3>Full Rules</h3>
@@ -522,8 +542,8 @@
                 any remaining answers are shown before moving on to the other team's turn.</li>
             <li>Once both teams have taken their turn, a round summary shows how many points each team earned that
                 round before moving to the next one.</li>
-            <li>Don't like the current question, or already played it before? <strong>Skip Question</strong> in the
-                top bar swaps in a different question for the same turn — no scoring change.</li>
+            <li>Don't like the current question, or already played it before? <strong>Skip Question</strong> (under
+                Turn options) swaps in a different question for the same turn — no scoring change.</li>
             <li>If the judge is unreachable for a while, <strong>Reveal</strong> in the top bar shows the full hidden
                 list so the host can finish scoring that turn by ear. It intentionally ends secrecy for that
                 question, so it's meant as a last resort.</li>
@@ -587,15 +607,22 @@
             </div>
         </div>
 
-        <div class="prompt" id="prompt"></div>
-
-        <div class="board" id="board"></div>
+        <div class="board-panel" id="boardPanel">
+            <div class="prompt" id="prompt"></div>
+            <div class="board" id="board"></div>
+        </div>
 
         <div class="strikes" id="strikes">
             <span class="strikes-label">Strikes</span>
             <span class="strike-mark" data-n="0">&times;</span>
             <span class="strike-mark" data-n="1">&times;</span>
             <span class="strike-mark" data-n="2">&times;</span>
+        </div>
+
+        <button type="button" id="turnOptionsToggle" class="link-toggle hidden">Turn options &#9662;</button>
+        <div class="controls hidden" id="turnOptionsRow">
+            <button type="button" id="skipQuestionBtn">Skip Question</button>
+            <button type="button" id="swapControlBtn">Swap Team</button>
         </div>
 
         <div class="message" id="message" aria-live="polite"></div>
@@ -688,6 +715,7 @@
         const teamCardScore0 = document.getElementById('teamCardScore0');
         const teamCardScore1 = document.getElementById('teamCardScore1');
         const roundIndicator = document.getElementById('roundIndicator');
+        const boardPanelEl = document.getElementById('boardPanel');
         const promptEl = document.getElementById('prompt');
         const boardEl = document.getElementById('board');
         const strikesEl = document.getElementById('strikes');
@@ -699,6 +727,8 @@
         const submitBtn = document.getElementById('submitBtn');
         const swapControlBtn = document.getElementById('swapControlBtn');
         const skipQuestionBtn = document.getElementById('skipQuestionBtn');
+        const turnOptionsToggle = document.getElementById('turnOptionsToggle');
+        const turnOptionsRow = document.getElementById('turnOptionsRow');
         const manualRevealBtn = document.getElementById('manualRevealBtn');
         const endGameBtn = document.getElementById('endGameBtn');
         const manualPanel = document.getElementById('manualPanel');
@@ -728,6 +758,7 @@
         let state = null; // the persisted game; null until a game is started/restored
         let inFlight = false;
         let pendingGuess = null; // last guess text, kept only for the Retry button
+        let turnOptionsOpen = false; // collapses back at the start of every turn
 
         function apiCall(action, payload) {
             return fetch(API_URL, {
@@ -871,8 +902,8 @@
             gameEl.classList.add('hidden');
             setupEl.classList.remove('hidden');
             manualRevealBtn.classList.add('hidden');
-            skipQuestionBtn.classList.add('hidden');
-            swapControlBtn.classList.add('hidden');
+            turnOptionsToggle.classList.add('hidden');
+            turnOptionsRow.classList.add('hidden');
             endGameBtn.classList.add('hidden');
             updateButtonBarDensity();
             if (!questionList) loadQuestionList();
@@ -943,8 +974,7 @@
             }
 
             const hideBoard = state.phase === 'GAME_END' || state.phase === 'ROUND_SUMMARY';
-            promptEl.classList.toggle('hidden', hideBoard);
-            boardEl.classList.toggle('hidden', hideBoard);
+            boardPanelEl.classList.toggle('hidden', hideBoard);
             strikesEl.classList.toggle('hidden', hideBoard);
             potEl.classList.toggle('hidden', hideBoard);
             // The last judge message (e.g. "Match! ... (12 pts)") is stale
@@ -959,7 +989,9 @@
             const inPlay = state.phase === 'PLAY' || state.phase === 'STEAL';
             guessForm.classList.toggle('hidden', !inPlay);
             manualRevealBtn.classList.toggle('hidden', !inPlay);
-            skipQuestionBtn.classList.toggle('hidden', !inPlay);
+            turnOptionsToggle.classList.toggle('hidden', !inPlay);
+            turnOptionsToggle.innerHTML = turnOptionsOpen ? 'Turn options &#9652;' : 'Turn options &#9662;';
+            turnOptionsRow.classList.toggle('hidden', !inPlay || !turnOptionsOpen);
             swapControlBtn.classList.toggle('hidden', state.phase !== 'PLAY');
             endGameBtn.classList.remove('hidden');
             endGameBtn.textContent = state.phase === 'GAME_END' ? 'New Game' : 'End Game';
@@ -1129,6 +1161,7 @@
         }
 
         function advanceQuestion() {
+            turnOptionsOpen = false;
             state.currentQuestionIndex += 1;
             if (state.currentQuestionIndex >= state.questions.length) {
                 state.phase = 'GAME_END';
@@ -1198,6 +1231,7 @@
             state.strikes = 0;
             state.pot = 0;
             state.phase = 'PLAY';
+            turnOptionsOpen = false;
             setMessage('');
             persist();
             render();
@@ -1219,9 +1253,16 @@
             render();
         });
 
+        // ================= Turn options disclosure =================
+        turnOptionsToggle.addEventListener('click', () => {
+            turnOptionsOpen = !turnOptionsOpen;
+            render();
+        });
+
         // ================= Swap control =================
         swapControlBtn.addEventListener('click', () => {
             state.controllingTeam = 1 - state.controllingTeam;
+            turnOptionsOpen = false;
             persist();
             render();
         });
